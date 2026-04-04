@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Paper, List, ListItem, ListItemText, Button, Chip } from '@mui/material'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import { useSession } from '../../context/SessionContext'
+import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function FinalPage() {
   const navigate = useNavigate()
@@ -29,7 +30,8 @@ export default function FinalPage() {
   const winner = leaderboard[0]
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <>
+      <Container maxWidth="sm" sx={{ py: 4 }}>
       <Typography variant="h3" align="center" gutterBottom>
         Quiz Complete!
       </Typography>
@@ -126,5 +128,8 @@ export default function FinalPage() {
         Play Again
       </Button>
     </Container>
+    
+    <ConnectionStatus />
+    </>
   )
 }

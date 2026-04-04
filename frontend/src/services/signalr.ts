@@ -26,6 +26,9 @@ class QuizHubService {
   private listeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
   private isConnecting: boolean = false
   private connectionPromise: Promise<void> | null = null
+  private onReconnectedCallback: (() => void) | null = null
+  private onReconnectingCallback: (() => void) | null = null
+  private onDisconnectedCallback: (() => void) | null = null
 
   async connect(): Promise<void> {
     // Already connected
@@ -72,14 +75,17 @@ class QuizHubService {
     // Handle reconnection
     this.connection.onreconnecting((error) => {
       console.log('SignalR reconnecting...', error)
+      this.onReconnectingCallback?.()
     })
 
     this.connection.onreconnected((connectionId) => {
       console.log('SignalR reconnected:', connectionId)
+      this.onReconnectedCallback?.()
     })
 
     this.connection.onclose((error) => {
       console.log('SignalR connection closed', error)
+      this.onDisconnectedCallback?.()
     })
 
     // Register all event handlers
@@ -139,6 +145,24 @@ class QuizHubService {
   // Check if connected
   get connected(): boolean {
     return this.connection?.state === signalR.HubConnectionState.Connected
+  }
+
+  // Check if reconnecting
+  get reconnecting(): boolean {
+    return this.connection?.state === signalR.HubConnectionState.Reconnecting
+  }
+
+  // Connection state callbacks
+  setOnReconnected(callback: (() => void) | null): void {
+    this.onReconnectedCallback = callback
+  }
+
+  setOnReconnecting(callback: (() => void) | null): void {
+    this.onReconnectingCallback = callback
+  }
+
+  setOnDisconnected(callback: (() => void) | null): void {
+    this.onDisconnectedCallback = callback
   }
 
   // Player methods

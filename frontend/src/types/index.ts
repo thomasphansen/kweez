@@ -49,6 +49,17 @@ export interface SessionState {
   currentQuestionIndex?: number
   totalQuestions: number
   participants: Participant[]
+  activeQuestion?: ActiveQuestion
+}
+
+export interface ActiveQuestion {
+  questionId: string
+  text: string
+  questionIndex: number
+  totalQuestions: number
+  timeLimitSeconds: number
+  remainingSeconds: number
+  answers: AnswerChoice[]
 }
 
 export interface Participant {

@@ -151,11 +151,41 @@ public class SessionService : ISessionService
     {
         var session = await _db.QuizSessions
             .Include(s => s.Quiz)
-            .ThenInclude(q => q.Questions)
+            .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
+            .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
             .Include(s => s.Participants)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
         if (session == null) return null;
+
+        // Build active question info if there's a question in progress
+        ActiveQuestionDto? activeQuestion = null;
+        if (session.Status == SessionStatus.Active && 
+            session.CurrentQuestionIndex.HasValue && 
+            session.CurrentQuestionReleasedAtUtc.HasValue)
+        {
+            var questions = session.Quiz.Questions.ToList();
+            if (session.CurrentQuestionIndex.Value < questions.Count)
+            {
+                var question = questions[session.CurrentQuestionIndex.Value];
+                var elapsed = (DateTime.UtcNow - session.CurrentQuestionReleasedAtUtc.Value).TotalSeconds;
+                var remaining = Math.Max(0, question.TimeLimitSeconds - (int)elapsed);
+                
+                // Only include if there's still time left
+                if (remaining > 0)
+                {
+                    activeQuestion = new ActiveQuestionDto(
+                        question.Id,
+                        question.Text,
+                        session.CurrentQuestionIndex.Value,
+                        questions.Count,
+                        question.TimeLimitSeconds,
+                        remaining,
+                        question.AnswerOptions.Select((a, i) => new AnswerChoiceDto(a.Id, a.Text, i)).ToList()
+                    );
+                }
+            }
+        }
 
         return new SessionStateDto(
             session.Id,
@@ -164,7 +194,8 @@ public class SessionService : ISessionService
             session.Quiz.Questions.Count,
             session.Participants.Select(p => new ParticipantDto(
                 p.Id, p.Name, p.TotalScore, p.IsConnected
-            )).ToList()
+            )).ToList(),
+            activeQuestion
         );
     }
 

@@ -16,6 +16,8 @@ interface PlayerSession {
   playerName: string
 }
 
+type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting'
+
 interface SessionContextType {
   // Player state
   playerSession: PlayerSession | null
@@ -30,6 +32,7 @@ interface SessionContextType {
   isQuizEnded: boolean
   
   // Connection
+  connectionStatus: ConnectionStatus
   isConnected: boolean
   connect: () => Promise<void>
   disconnect: () => Promise<void>
@@ -61,6 +64,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : null
   })
   
+  // Reference for use in callbacks
+  const playerSessionRef = useRef(playerSession)
+  playerSessionRef.current = playerSession
+  
   // Game state
   const [sessionState, setSessionState] = useState<SessionState | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState<QuestionReleased | null>(null)
@@ -68,7 +75,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [questionResults, setQuestionResults] = useState<QuestionResults | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isQuizEnded, setIsQuizEnded] = useState(false)
-  const [isConnected, setIsConnected] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
+
+  const isConnected = connectionStatus === 'connected'
 
   const setPlayerSession = useCallback((session: PlayerSession | null) => {
     setPlayerSessionState(session)
@@ -82,24 +91,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const connect = useCallback(async () => {
     try {
       await quizHub.connect()
-      setIsConnected(true)
+      setConnectionStatus('connected')
     } catch (error) {
       console.error('Failed to connect to SignalR:', error)
-      setIsConnected(false)
+      setConnectionStatus('disconnected')
     }
   }, [])
 
   const disconnect = useCallback(async () => {
     await quizHub.disconnect()
-    setIsConnected(false)
+    setConnectionStatus('disconnected')
   }, [])
 
   const joinSession = useCallback(async (participantId: string) => {
-    if (!isConnected) {
+    if (!quizHub.connected) {
       await connect()
     }
     await quizHub.joinSession(participantId)
-  }, [isConnected, connect])
+  }, [connect])
 
   const submitAnswer = useCallback(async (answerId: string) => {
     if (!playerSession || !currentQuestion) return
@@ -115,6 +124,53 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSessionState(null)
   }, [])
 
+  // Handle reconnection - rejoin session when SignalR reconnects
+  const handleReconnection = useCallback(async () => {
+    const session = playerSessionRef.current
+    if (!session || !isPlayerRouteRef.current) return
+    
+    console.log('Reconnected - rejoining session...')
+    try {
+      await quizHub.joinSession(session.participantId)
+      setConnectionStatus('connected')
+    } catch (error) {
+      console.error('Failed to rejoin session after reconnection:', error)
+    }
+  }, [])
+
+  // Setup connection state callbacks
+  useEffect(() => {
+    quizHub.setOnReconnected(() => {
+      handleReconnection()
+    })
+    
+    quizHub.setOnReconnecting(() => {
+      setConnectionStatus('reconnecting')
+    })
+    
+    quizHub.setOnDisconnected(() => {
+      setConnectionStatus('disconnected')
+    })
+
+    return () => {
+      quizHub.setOnReconnected(null)
+      quizHub.setOnReconnecting(null)
+      quizHub.setOnDisconnected(null)
+    }
+  }, [handleReconnection])
+
+  // Auto-connect and join when player session exists
+  useEffect(() => {
+    if (!playerSession || !isPlayerRouteRef.current) return
+    
+    // Connect and join if not connected
+    if (!quizHub.connected) {
+      connect().then(() => {
+        quizHub.joinSession(playerSession.participantId).catch(console.error)
+      })
+    }
+  }, [playerSession, connect])
+
   // Setup SignalR event listeners
   useEffect(() => {
     const unsubscribers: (() => void)[] = []
@@ -122,6 +178,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     unsubscribers.push(
       quizHub.on('SessionState', (state) => {
         setSessionState(state)
+        
+        // Handle state sync on reconnection
+        if (isPlayerRouteRef.current && state.activeQuestion) {
+          // There's an active question - restore it and navigate to play
+          setCurrentQuestion({
+            questionId: state.activeQuestion.questionId,
+            text: state.activeQuestion.text,
+            questionIndex: state.activeQuestion.questionIndex,
+            totalQuestions: state.activeQuestion.totalQuestions,
+            timeLimitSeconds: state.activeQuestion.remainingSeconds, // Use remaining time
+            answers: state.activeQuestion.answers,
+          })
+          setQuestionResults(null)
+          setLastAnswerResult(null)
+          navigate('/play')
+        } else if (isPlayerRouteRef.current && state.status === 'Finished') {
+          // Quiz ended while disconnected
+          setIsQuizEnded(true)
+          navigate('/final')
+        } else if (isPlayerRouteRef.current && state.status === 'Active' && !state.activeQuestion) {
+          // Quiz is active but between questions - go to results if we have them, otherwise wait
+          // Stay on current page - next question will be pushed via QuestionReleased
+        }
       })
     )
 
@@ -152,6 +231,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     unsubscribers.push(
       quizHub.on('QuestionClosed', (results) => {
         setQuestionResults(results)
+        setCurrentQuestion(null)
         setLeaderboard(results.leaderboard)
         // Only navigate if this is a player (not admin)
         if (isPlayerRouteRef.current) {
@@ -170,6 +250,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       quizHub.on('QuizEnded', (finalLeaderboard) => {
         setLeaderboard(finalLeaderboard)
         setIsQuizEnded(true)
+        setCurrentQuestion(null)
         // Only navigate if this is a player (not admin)
         if (isPlayerRouteRef.current) {
           navigate('/final')
@@ -217,6 +298,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         questionResults,
         leaderboard,
         isQuizEnded,
+        connectionStatus,
         isConnected,
         connect,
         disconnect,

@@ -5,6 +5,7 @@ import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
 import { useSession } from '../../context/SessionContext'
 import { answerColors } from '../../theme'
+import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function PlayPage() {
   const navigate = useNavigate()
@@ -58,7 +59,8 @@ export default function PlayPage() {
   const showResult = lastAnswerResult !== null
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', p: 2 }}>
+    <>
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', p: 2 }}>
       {/* Header */}
       <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -192,5 +194,8 @@ export default function PlayPage() {
         </Grid>
       </Box>
     </Box>
+    
+    <ConnectionStatus />
+    </>
   )
 }

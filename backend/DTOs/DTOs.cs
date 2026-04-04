@@ -89,7 +89,19 @@ public record SessionStateDto(
     string Status,
     int? CurrentQuestionIndex,
     int TotalQuestions,
-    List<ParticipantDto> Participants
+    List<ParticipantDto> Participants,
+    ActiveQuestionDto? ActiveQuestion = null
+);
+
+// Active question info for reconnecting players
+public record ActiveQuestionDto(
+    Guid QuestionId,
+    string Text,
+    int QuestionIndex,
+    int TotalQuestions,
+    int TimeLimitSeconds,
+    int RemainingSeconds,
+    List<AnswerChoiceDto> Answers
 );
 
 // Participant DTOs

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Paper, List, ListItem, ListItemText, Chip } from '@mui/material'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import { useSession } from '../../context/SessionContext'
+import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function ResultsPage() {
   const navigate = useNavigate()
@@ -21,7 +22,8 @@ export default function ResultsPage() {
   const myEntry = leaderboard.find((e) => e.participantId === playerSession.participantId)
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <>
+      <Container maxWidth="sm" sx={{ py: 4 }}>
       <Typography variant="h4" align="center" gutterBottom>
         Question {questionResults.questionIndex + 1} Results
       </Typography>
@@ -96,5 +98,8 @@ export default function ResultsPage() {
         Waiting for next question...
       </Typography>
     </Container>
+    
+    <ConnectionStatus />
+    </>
   )
 }
