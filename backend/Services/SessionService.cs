@@ -22,6 +22,7 @@ public interface ISessionService
     Task<bool> EndSessionAsync(Guid sessionId);
     Task<List<ParticipantDto>> GetParticipantsAsync(Guid sessionId);
     Task<List<LeaderboardEntryDto>> GetLeaderboardAsync(Guid sessionId, Guid? lastQuestionId = null);
+    Task<bool> HaveAllParticipantsAnsweredAsync(Guid sessionId, Guid questionId);
 }
 
 public class SessionService : ISessionService
@@ -332,5 +333,20 @@ public class SessionService : ISessionService
                 ? p.Answers.FirstOrDefault(a => a.QuestionId == lastQuestionId)?.Score 
                 : null
         )).ToList();
+    }
+
+    public async Task<bool> HaveAllParticipantsAnsweredAsync(Guid sessionId, Guid questionId)
+    {
+        var participantCount = await _db.Participants
+            .CountAsync(p => p.SessionId == sessionId);
+
+        if (participantCount == 0)
+            return false;
+
+        var answerCount = await _db.ParticipantAnswers
+            .CountAsync(a => a.QuestionId == questionId && 
+                            a.Participant.SessionId == sessionId);
+
+        return answerCount >= participantCount;
     }
 }

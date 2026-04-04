@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { quizHub } from '../services/signalr'
 import type {
   QuestionReleased,
@@ -48,6 +48,12 @@ const STORAGE_KEY = 'kweez_player_session'
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Track if this is a player (not admin) - admin routes start with /admin
+  const isPlayerRoute = !location.pathname.startsWith('/admin')
+  const isPlayerRouteRef = useRef(isPlayerRoute)
+  isPlayerRouteRef.current = isPlayerRoute
   
   // Player session (persisted)
   const [playerSession, setPlayerSessionState] = useState<PlayerSession | null>(() => {
@@ -130,7 +136,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setCurrentQuestion(question)
         setLastAnswerResult(null)
         setQuestionResults(null)
-        navigate('/play')
+        // Only navigate if this is a player (not admin)
+        if (isPlayerRouteRef.current) {
+          navigate('/play')
+        }
       })
     )
 
@@ -144,7 +153,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       quizHub.on('QuestionClosed', (results) => {
         setQuestionResults(results)
         setLeaderboard(results.leaderboard)
-        navigate('/results')
+        // Only navigate if this is a player (not admin)
+        if (isPlayerRouteRef.current) {
+          navigate('/results')
+        }
       })
     )
 
@@ -158,7 +170,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       quizHub.on('QuizEnded', (finalLeaderboard) => {
         setLeaderboard(finalLeaderboard)
         setIsQuizEnded(true)
-        navigate('/final')
+        // Only navigate if this is a player (not admin)
+        if (isPlayerRouteRef.current) {
+          navigate('/final')
+        }
       })
     )
 

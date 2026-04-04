@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -14,6 +14,11 @@ import {
   Chip,
   Grid,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
@@ -36,38 +41,66 @@ export default function LiveControl() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState('')
+  const [showEndConfirm, setShowEndConfirm] = useState(false)
+  
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true)
 
-  const loadSession = useCallback(async () => {
-    if (!sessionId) return
-    try {
-      const data = await sessionApi.getById(sessionId)
-      setSession(data)
-    } catch (err) {
-      setError('Session not found')
-    } finally {
-      setLoading(false)
-    }
-  }, [sessionId])
-
-  const connectSignalR = useCallback(async () => {
-    if (!sessionId) return
-    try {
-      await quizHub.connect()
-      await quizHub.joinAsAdmin(sessionId)
-      setIsConnected(true)
-    } catch (err) {
-      setError('Failed to connect to real-time updates')
-    }
-  }, [sessionId])
-
+  // Initialize session and SignalR connection
   useEffect(() => {
-    loadSession()
-    connectSignalR()
+    if (!sessionId) return
 
+    const currentSessionId = sessionId // Capture for closure
+    let cancelled = false
+
+    async function init() {
+      // Load session data
+      try {
+        const data = await sessionApi.getById(currentSessionId)
+        if (!cancelled && isMountedRef.current) {
+          setSession(data)
+        }
+      } catch (err) {
+        if (!cancelled && isMountedRef.current) {
+          setError('Session not found')
+        }
+      } finally {
+        if (!cancelled && isMountedRef.current) {
+          setLoading(false)
+        }
+      }
+
+      // Connect to SignalR
+      try {
+        await quizHub.connect()
+        if (!cancelled && isMountedRef.current) {
+          await quizHub.joinAsAdmin(currentSessionId)
+          setIsConnected(true)
+        }
+      } catch (err) {
+        if (!cancelled && isMountedRef.current) {
+          console.error('SignalR connection error:', err)
+          setError('Failed to connect to real-time updates')
+        }
+      }
+    }
+
+    init()
+
+    // Cleanup: only mark as cancelled, don't disconnect during re-renders
     return () => {
+      cancelled = true
+    }
+  }, [sessionId])
+
+  // Cleanup SignalR only on actual unmount (empty deps)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
       quizHub.disconnect()
     }
-  }, [loadSession, connectSignalR])
+  }, [])
 
   // SignalR event listeners
   useEffect(() => {
@@ -165,6 +198,7 @@ export default function LiveControl() {
   }
 
   const handleEndQuiz = async () => {
+    setShowEndConfirm(false)
     if (!sessionId) return
     try {
       await quizHub.endQuiz(sessionId)
@@ -294,6 +328,17 @@ export default function LiveControl() {
                 </Button>
               )}
 
+              {isWaiting && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<StopIcon />}
+                  onClick={() => setShowEndConfirm(true)}
+                >
+                  Cancel Session
+                </Button>
+              )}
+
               {isActive && !currentQuestion && (
                 <Button
                   variant="contained"
@@ -318,7 +363,7 @@ export default function LiveControl() {
                   variant="contained"
                   color="error"
                   startIcon={<StopIcon />}
-                  onClick={handleEndQuiz}
+                  onClick={() => setShowEndConfirm(true)}
                 >
                   End Quiz
                 </Button>
@@ -378,6 +423,28 @@ export default function LiveControl() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showEndConfirm} onClose={() => setShowEndConfirm(false)}>
+        <DialogTitle>
+          {isWaiting ? 'Cancel Session?' : 'End Quiz?'}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {isWaiting
+              ? 'This will cancel the session. All players will be disconnected.'
+              : 'This will end the quiz immediately. Players will see the final leaderboard.'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowEndConfirm(false)}>
+            Go Back
+          </Button>
+          <Button onClick={handleEndQuiz} color="error" variant="contained">
+            {isWaiting ? 'Cancel Session' : 'End Quiz'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }

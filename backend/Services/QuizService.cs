@@ -105,8 +105,23 @@ public class QuizService : IQuizService
 
     public async Task<bool> DeleteQuizAsync(Guid id)
     {
-        var quiz = await _db.Quizzes.FindAsync(id);
+        var quiz = await _db.Quizzes
+            .Include(q => q.Questions)
+            .Include(q => q.Sessions)
+                .ThenInclude(s => s.Participants)
+                    .ThenInclude(p => p.Answers)
+            .FirstOrDefaultAsync(q => q.Id == id);
+            
         if (quiz == null) return false;
+
+        // Delete participant answers first (they have Restrict delete behavior)
+        foreach (var session in quiz.Sessions)
+        {
+            foreach (var participant in session.Participants)
+            {
+                _db.ParticipantAnswers.RemoveRange(participant.Answers);
+            }
+        }
 
         _db.Quizzes.Remove(quiz);
         await _db.SaveChangesAsync();

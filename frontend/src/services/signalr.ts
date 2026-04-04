@@ -24,23 +24,62 @@ export type QuizHubEvents = {
 class QuizHubService {
   private connection: signalR.HubConnection | null = null
   private listeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
+  private isConnecting: boolean = false
+  private connectionPromise: Promise<void> | null = null
 
   async connect(): Promise<void> {
+    // Already connected
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
       return
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || ''
+    // Connection in progress - wait for it
+    if (this.isConnecting && this.connectionPromise) {
+      return this.connectionPromise
+    }
+
+    // Start new connection
+    this.isConnecting = true
+    this.connectionPromise = this.doConnect()
     
+    try {
+      await this.connectionPromise
+    } finally {
+      this.isConnecting = false
+      this.connectionPromise = null
+    }
+  }
+
+  private async doConnect(): Promise<void> {
+    // Build the SignalR URL
+    // VITE_API_URL might be "https://domain.com/api" or "https://domain.com" or empty
+    let baseUrl = import.meta.env.VITE_API_URL || ''
+    
+    // Strip /api suffix if present, since SignalR hub is at /hubs/quiz not /api/hubs/quiz
+    if (baseUrl.endsWith('/api')) {
+      baseUrl = baseUrl.slice(0, -4)
+    }
+    
+    const hubUrl = `${baseUrl}/hubs/quiz`
+    console.log('Connecting to SignalR hub:', hubUrl)
+
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${apiUrl}/hubs/quiz`)
-      .withAutomaticReconnect()
+      .withUrl(hubUrl)
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000]) // Retry intervals
       .configureLogging(signalR.LogLevel.Information)
       .build()
 
-    // Re-register listeners on reconnect
-    this.connection.onreconnected(() => {
-      console.log('SignalR reconnected')
+    // Handle reconnection
+    this.connection.onreconnecting((error) => {
+      console.log('SignalR reconnecting...', error)
+    })
+
+    this.connection.onreconnected((connectionId) => {
+      console.log('SignalR reconnected:', connectionId)
+    })
+
+    this.connection.onclose((error) => {
+      console.log('SignalR connection closed', error)
     })
 
     // Register all event handlers
@@ -65,12 +104,22 @@ class QuizHubService {
     })
 
     await this.connection.start()
-    console.log('SignalR connected')
+    console.log('SignalR connected successfully')
   }
 
   async disconnect(): Promise<void> {
+    // Don't disconnect while connecting - it causes the negotiation error
+    if (this.isConnecting) {
+      console.log('Skipping disconnect - connection in progress')
+      return
+    }
+
     if (this.connection) {
-      await this.connection.stop()
+      try {
+        await this.connection.stop()
+      } catch (err) {
+        console.error('Error disconnecting SignalR:', err)
+      }
       this.connection = null
     }
   }
@@ -87,13 +136,24 @@ class QuizHubService {
     }
   }
 
+  // Check if connected
+  get connected(): boolean {
+    return this.connection?.state === signalR.HubConnectionState.Connected
+  }
+
   // Player methods
   async joinSession(participantId: string): Promise<void> {
-    await this.connection?.invoke('JoinSession', participantId)
+    if (!this.connected) {
+      throw new Error('Not connected to SignalR')
+    }
+    await this.connection!.invoke('JoinSession', participantId)
   }
 
   async submitAnswer(participantId: string, questionId: string, answerOptionId: string): Promise<void> {
-    await this.connection?.invoke('SubmitAnswer', participantId, {
+    if (!this.connected) {
+      throw new Error('Not connected to SignalR')
+    }
+    await this.connection!.invoke('SubmitAnswer', participantId, {
       questionId,
       answerOptionId,
     })
@@ -101,23 +161,38 @@ class QuizHubService {
 
   // Admin methods
   async joinAsAdmin(sessionId: string): Promise<void> {
-    await this.connection?.invoke('JoinAsAdmin', sessionId)
+    if (!this.connected) {
+      throw new Error('Not connected to SignalR')
+    }
+    await this.connection!.invoke('JoinAsAdmin', sessionId)
   }
 
   async startQuiz(sessionId: string): Promise<void> {
-    await this.connection?.invoke('StartQuiz', sessionId)
+    if (!this.connected) {
+      throw new Error('Not connected to SignalR')
+    }
+    await this.connection!.invoke('StartQuiz', sessionId)
   }
 
   async releaseNextQuestion(sessionId: string): Promise<void> {
-    await this.connection?.invoke('ReleaseNextQuestion', sessionId)
+    if (!this.connected) {
+      throw new Error('Not connected to SignalR')
+    }
+    await this.connection!.invoke('ReleaseNextQuestion', sessionId)
   }
 
   async forceCloseQuestion(sessionId: string): Promise<void> {
-    await this.connection?.invoke('ForceCloseQuestion', sessionId)
+    if (!this.connected) {
+      throw new Error('Not connected to SignalR')
+    }
+    await this.connection!.invoke('ForceCloseQuestion', sessionId)
   }
 
   async endQuiz(sessionId: string): Promise<void> {
-    await this.connection?.invoke('EndQuiz', sessionId)
+    if (!this.connected) {
+      throw new Error('Not connected to SignalR')
+    }
+    await this.connection!.invoke('EndQuiz', sessionId)
   }
 }
 

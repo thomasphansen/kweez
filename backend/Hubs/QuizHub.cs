@@ -23,15 +23,27 @@ public class QuizHub : Hub<IQuizHubClient>
 {
     private readonly ISessionService _sessionService;
     private readonly IScoringService _scoringService;
+    private readonly IQuizNotificationService _notificationService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<QuizHub> _logger;
 
     // Store session timing info (in production, use distributed cache)
     private static readonly Dictionary<Guid, DateTime> _questionReleaseTimes = new();
+    
+    // Store cancellation tokens for question timers (to allow early close)
+    private static readonly Dictionary<Guid, CancellationTokenSource> _questionTimers = new();
 
-    public QuizHub(ISessionService sessionService, IScoringService scoringService, ILogger<QuizHub> logger)
+    public QuizHub(
+        ISessionService sessionService, 
+        IScoringService scoringService, 
+        IQuizNotificationService notificationService,
+        IServiceScopeFactory scopeFactory,
+        ILogger<QuizHub> logger)
     {
         _sessionService = sessionService;
         _scoringService = scoringService;
+        _notificationService = notificationService;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -127,11 +139,58 @@ public class QuizHub : Hub<IQuizHubClient>
         _logger.LogInformation("Question {Index} released for session {SessionId}", dto.QuestionIndex, sessionId);
 
         // Schedule automatic question close
+        var questionId = question.Id;
+        var timeLimitSeconds = question.TimeLimitSeconds;
+        
+        // Cancel any existing timer for this session
+        if (_questionTimers.TryGetValue(sessionId, out var existingCts))
+        {
+            existingCts.Cancel();
+            existingCts.Dispose();
+        }
+        
+        var cts = new CancellationTokenSource();
+        _questionTimers[sessionId] = cts;
+        
         _ = Task.Run(async () =>
         {
-            await Task.Delay(TimeSpan.FromSeconds(question.TimeLimitSeconds));
-            await CloseQuestion(sessionId, question.Id);
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(timeLimitSeconds), cts.Token);
+                await CloseQuestionBackground(sessionId, questionId);
+            }
+            catch (TaskCanceledException)
+            {
+                // Timer was cancelled because all players answered early
+                _logger.LogInformation("Question timer cancelled for session {SessionId} (all players answered)", sessionId);
+            }
         });
+    }
+
+    // Close question from background task (uses IHubContext via notification service)
+    private async Task CloseQuestionBackground(Guid sessionId, Guid questionId)
+    {
+        // Clean up the timer
+        if (_questionTimers.TryGetValue(sessionId, out var cts))
+        {
+            _questionTimers.Remove(sessionId);
+            cts.Dispose();
+        }
+        
+        using var scope = _scopeFactory.CreateScope();
+        var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
+        var scoringService = scope.ServiceProvider.GetRequiredService<IScoringService>();
+        
+        await sessionService.CloseCurrentQuestionAsync(sessionId);
+        _questionReleaseTimes.Remove(sessionId);
+
+        var results = await scoringService.GetQuestionResultsAsync(sessionId, questionId);
+        if (results != null)
+        {
+            await _notificationService.NotifyQuestionClosed(sessionId, results);
+        }
+
+        _logger.LogInformation("Question {QuestionId} closed (background) for session {SessionId}", questionId, sessionId);
     }
 
     // Player submits answer
@@ -169,6 +228,21 @@ public class QuizHub : Hub<IQuizHubClient>
 
         _logger.LogInformation("Participant {ParticipantId} submitted answer for question {QuestionId}, correct: {IsCorrect}, score: {Score}",
             participantId, request.QuestionId, result.IsCorrect, result.Score);
+
+        // Check if all participants have answered - close question early if so
+        var allAnswered = await _sessionService.HaveAllParticipantsAnsweredAsync(sessionId, request.QuestionId);
+        if (allAnswered)
+        {
+            _logger.LogInformation("All participants answered question {QuestionId} - closing early", request.QuestionId);
+            
+            // Cancel the timer and close the question
+            if (_questionTimers.TryGetValue(sessionId, out var cts))
+            {
+                cts.Cancel();
+            }
+            
+            await CloseQuestionBackground(sessionId, request.QuestionId);
+        }
     }
 
     // Close question and show results

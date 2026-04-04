@@ -13,6 +13,7 @@ builder.Services.AddDbContext<KweezDbContext>(options =>
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IScoringService, ScoringService>();
+builder.Services.AddSingleton<IQuizNotificationService, QuizNotificationService>();
 
 // SignalR
 builder.Services.AddSignalR();
