@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import { theme } from '../../../theme'
 import PlayPage from '../PlayPage'
-import { createTestQuestion } from '../../../test/utils'
+import { createTestLocalizedQuestion } from '../../../test/utils'
 
 // Mock useNavigate
 const mockNavigate = vi.fn()
@@ -80,7 +80,7 @@ describe('PlayPage', () => {
   })
 
   it('should display question text', () => {
-    const question = createTestQuestion({ text: 'What is the capital of France?' })
+    const question = createTestLocalizedQuestion({ text: 'What is the capital of France?' })
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -99,7 +99,7 @@ describe('PlayPage', () => {
   })
 
   it('should display question progress', () => {
-    const question = createTestQuestion({ questionIndex: 1, totalQuestions: 5 })
+    const question = createTestLocalizedQuestion({ questionIndex: 1, totalQuestions: 5 })
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -118,7 +118,7 @@ describe('PlayPage', () => {
   })
 
   it('should display all answer options', () => {
-    const question = createTestQuestion({
+    const question = createTestLocalizedQuestion({
       answers: [
         { id: 'a1', text: 'Paris', index: 0 },
         { id: 'a2', text: 'London', index: 1 },
@@ -147,7 +147,7 @@ describe('PlayPage', () => {
   })
 
   it('should display timer with initial time', () => {
-    const question = createTestQuestion({ timeLimitSeconds: 15 })
+    const question = createTestLocalizedQuestion({ timeLimitSeconds: 15 })
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -166,7 +166,7 @@ describe('PlayPage', () => {
   })
 
   it('should call submitAnswer when answer is clicked', async () => {
-    const question = createTestQuestion()
+    const question = createTestLocalizedQuestion()
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -188,7 +188,7 @@ describe('PlayPage', () => {
   })
 
   it('should show "Tap another answer to change" when answer selected and time remaining', () => {
-    const question = createTestQuestion()
+    const question = createTestLocalizedQuestion()
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -207,7 +207,7 @@ describe('PlayPage', () => {
   })
 
   it('should allow changing answer while time remains', () => {
-    const question = createTestQuestion()
+    const question = createTestLocalizedQuestion()
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -231,7 +231,7 @@ describe('PlayPage', () => {
   })
 
   it('should not show correct/wrong feedback on PlayPage', () => {
-    const question = createTestQuestion()
+    const question = createTestLocalizedQuestion()
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -252,7 +252,7 @@ describe('PlayPage', () => {
   })
 
   it('should render ConnectionStatus component', () => {
-    const question = createTestQuestion()
+    const question = createTestLocalizedQuestion()
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -271,7 +271,7 @@ describe('PlayPage', () => {
   })
 
   it('should countdown timer', async () => {
-    const question = createTestQuestion({ timeLimitSeconds: 15 })
+    const question = createTestLocalizedQuestion({ timeLimitSeconds: 15 })
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -297,7 +297,7 @@ describe('PlayPage', () => {
   })
 
   it('should show "Waiting for results..." when time runs out', async () => {
-    const question = createTestQuestion({ timeLimitSeconds: 2 })
+    const question = createTestLocalizedQuestion({ timeLimitSeconds: 2 })
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -321,7 +321,7 @@ describe('PlayPage', () => {
   })
 
   it('should disable answers when time runs out', async () => {
-    const question = createTestQuestion({ timeLimitSeconds: 1 })
+    const question = createTestLocalizedQuestion({ timeLimitSeconds: 1 })
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',

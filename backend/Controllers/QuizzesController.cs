@@ -178,4 +178,34 @@ public class QuizzesController : ControllerBase
         if (!deleted) return BadRequest("Could not delete language. Language not found or is the default language.");
         return NoContent();
     }
+
+    // Translation management endpoints
+
+    [HttpGet("{id:guid}/translations")]
+    public async Task<ActionResult<QuizWithTranslationsDto>> GetQuizWithTranslations(Guid id)
+    {
+        var quiz = await _quizService.GetQuizWithTranslationsAsync(id);
+        if (quiz == null) return NotFound();
+        return Ok(quiz);
+    }
+
+    [HttpPut("questions/{questionId:guid}/translations")]
+    public async Task<ActionResult<QuestionWithTranslationsDto>> UpdateQuestionTranslations(
+        Guid questionId, 
+        UpdateQuestionTranslationsRequest request)
+    {
+        var question = await _quizService.UpdateQuestionTranslationsAsync(questionId, request);
+        if (question == null) return NotFound();
+        return Ok(question);
+    }
+
+    [HttpPost("{quizId:guid}/questions/translations")]
+    public async Task<ActionResult<QuestionWithTranslationsDto>> AddQuestionWithTranslations(
+        Guid quizId, 
+        UpdateQuestionTranslationsRequest request)
+    {
+        var question = await _quizService.AddQuestionWithTranslationsAsync(quizId, request);
+        if (question == null) return NotFound();
+        return CreatedAtAction(nameof(GetQuizWithTranslations), new { id = quizId }, question);
+    }
 }

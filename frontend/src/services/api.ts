@@ -1,4 +1,4 @@
-import type { Quiz, QuizDetail, Session, JoinResponse, Participant, LeaderboardEntry, QuizLanguage } from '../types'
+import type { Quiz, QuizDetail, Session, JoinResponse, Participant, LeaderboardEntry, QuizLanguage, QuizWithTranslations, QuestionWithTranslations, UpdateQuestionTranslationsRequest } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -105,6 +105,22 @@ export const quizApi = {
 
   deleteLanguage: (quizId: string, languageCode: string) =>
     fetchJson<void>(`/api/quizzes/${quizId}/languages/${languageCode}`, { method: 'DELETE' }),
+
+  // Translation management
+  getWithTranslations: (id: string) =>
+    fetchJson<QuizWithTranslations>(`/api/quizzes/${id}/translations`),
+
+  updateQuestionTranslations: (questionId: string, data: UpdateQuestionTranslationsRequest) =>
+    fetchJson<QuestionWithTranslations>(`/api/quizzes/questions/${questionId}/translations`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  addQuestionWithTranslations: (quizId: string, data: UpdateQuestionTranslationsRequest) =>
+    fetchJson<QuestionWithTranslations>(`/api/quizzes/${quizId}/questions/translations`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 }
 
 // Session API

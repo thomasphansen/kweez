@@ -758,4 +758,427 @@ public class QuizServiceTests
     }
 
     #endregion
+
+    #region Language Management Tests
+
+    [Fact]
+    public async Task AddQuizLanguageAsync_ValidLanguage_AddsLanguage()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+
+        // Act
+        var result = await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("pt", result.LanguageCode);
+        Assert.False(result.IsDefault);
+    }
+
+    [Fact]
+    public async Task AddQuizLanguageAsync_DuplicateLanguage_ReturnsNull()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+
+        // Act - try to add "en" which already exists as default
+        var result = await service.AddQuizLanguageAsync(quiz.Id, "en");
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task DeleteQuizLanguageAsync_NonDefaultLanguage_DeletesLanguageAndTranslations()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+
+        // Add a second language
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Add translations for the new language
+        var question = quiz.Questions.First();
+        await service.UpdateQuestionTranslationsAsync(question.Id, new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("English Question", new List<string> { "A", "B", "C", "D" }),
+                ["pt"] = new QuestionTranslationContentDto("Portuguese Question", new List<string> { "A-pt", "B-pt", "C-pt", "D-pt" })
+            }
+        ));
+
+        // Act
+        var result = await service.DeleteQuizLanguageAsync(quiz.Id, "pt");
+
+        // Assert
+        Assert.True(result);
+
+        // Verify translations were deleted
+        var ptQuestionTranslations = db.QuestionTranslations.Where(t => t.LanguageCode == "pt").ToList();
+        var ptAnswerTranslations = db.AnswerOptionTranslations.Where(t => t.LanguageCode == "pt").ToList();
+        Assert.Empty(ptQuestionTranslations);
+        Assert.Empty(ptAnswerTranslations);
+    }
+
+    [Fact]
+    public async Task DeleteQuizLanguageAsync_DefaultLanguage_ReturnsFalse()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+
+        // Act - try to delete the default language "en"
+        var result = await service.DeleteQuizLanguageAsync(quiz.Id, "en");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    #endregion
+
+    #region Translation Management Tests
+
+    [Fact]
+    public async Task GetQuizWithTranslationsAsync_ReturnsAllLanguageTranslations()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 2);
+        var service = new QuizService(db);
+
+        // Act
+        var result = await service.GetQuizWithTranslationsAsync(quiz.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Questions.Count);
+        Assert.Single(result.Languages);
+        Assert.Contains("en", result.Questions[0].Translations.Keys);
+    }
+
+    [Fact]
+    public async Task GetQuizWithTranslationsAsync_WithNewLanguage_ReturnsEmptyTranslationsForNewLanguage()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+
+        // Add a new language (no translations exist yet)
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Act
+        var result = await service.GetQuizWithTranslationsAsync(quiz.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Languages.Count);
+        
+        var question = result.Questions.First();
+        Assert.Contains("en", question.Translations.Keys);
+        Assert.Contains("pt", question.Translations.Keys);
+        
+        // Portuguese translations should be empty strings
+        Assert.Equal("", question.Translations["pt"].QuestionText);
+        Assert.All(question.Translations["pt"].AnswerTexts, text => Assert.Equal("", text));
+    }
+
+    [Fact]
+    public async Task UpdateQuestionTranslationsAsync_ExistingQuestion_UpdatesTranslations()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+        var questionId = quiz.Questions.First().Id;
+
+        // Act
+        var result = await service.UpdateQuestionTranslationsAsync(questionId, new UpdateQuestionTranslationsRequest(
+            20,
+            1,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("Updated English Question", new List<string> { "A1", "B1", "C1", "D1" })
+            }
+        ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(20, result.TimeLimitSeconds);
+        Assert.Equal(1, result.CorrectAnswerIndex);
+        Assert.Equal("Updated English Question", result.Translations["en"].QuestionText);
+        Assert.Equal("A1", result.Translations["en"].AnswerTexts[0]);
+    }
+
+    [Fact]
+    public async Task UpdateQuestionTranslationsAsync_AddNewLanguageTranslation_CreatesTranslations()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+        var questionId = quiz.Questions.First().Id;
+
+        // Add a new language to the quiz
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Act - Update with translations for both languages (this is the bug scenario)
+        var result = await service.UpdateQuestionTranslationsAsync(questionId, new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("English Question", new List<string> { "A", "B", "C", "D" }),
+                ["pt"] = new QuestionTranslationContentDto("Pergunta em Português", new List<string> { "A-pt", "B-pt", "C-pt", "D-pt" })
+            }
+        ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Contains("en", result.Translations.Keys);
+        Assert.Contains("pt", result.Translations.Keys);
+        Assert.Equal("English Question", result.Translations["en"].QuestionText);
+        Assert.Equal("Pergunta em Português", result.Translations["pt"].QuestionText);
+        Assert.Equal("A-pt", result.Translations["pt"].AnswerTexts[0]);
+    }
+
+    [Fact]
+    public async Task UpdateQuestionTranslationsAsync_AddNewLanguageTranslation_PersistsToDatabase()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+        var questionId = quiz.Questions.First().Id;
+
+        // Add a new language to the quiz
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Act - Add translations for the new language
+        await service.UpdateQuestionTranslationsAsync(questionId, new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("English", new List<string> { "A", "B", "C", "D" }),
+                ["pt"] = new QuestionTranslationContentDto("Português", new List<string> { "A-pt", "B-pt", "C-pt", "D-pt" })
+            }
+        ));
+
+        // Assert - Verify in database
+        var ptQuestionTranslation = db.QuestionTranslations
+            .FirstOrDefault(t => t.QuestionId == questionId && t.LanguageCode == "pt");
+        Assert.NotNull(ptQuestionTranslation);
+        Assert.Equal("Português", ptQuestionTranslation.Text);
+
+        var ptAnswerTranslations = db.AnswerOptionTranslations
+            .Where(t => t.LanguageCode == "pt")
+            .ToList();
+        Assert.Equal(4, ptAnswerTranslations.Count);
+    }
+
+    [Fact]
+    public async Task UpdateQuestionTranslationsAsync_MultipleLanguages_AllTranslationsAreSaved()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+        var questionId = quiz.Questions.First().Id;
+
+        // Add multiple new languages
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+        await service.AddQuizLanguageAsync(quiz.Id, "es");
+        await service.AddQuizLanguageAsync(quiz.Id, "fr");
+
+        // Act - Add translations for all languages
+        var result = await service.UpdateQuestionTranslationsAsync(questionId, new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("English Question", new List<string> { "A", "B", "C", "D" }),
+                ["pt"] = new QuestionTranslationContentDto("Pergunta", new List<string> { "A-pt", "B-pt", "C-pt", "D-pt" }),
+                ["es"] = new QuestionTranslationContentDto("Pregunta", new List<string> { "A-es", "B-es", "C-es", "D-es" }),
+                ["fr"] = new QuestionTranslationContentDto("Question", new List<string> { "A-fr", "B-fr", "C-fr", "D-fr" })
+            }
+        ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(4, result.Translations.Count);
+        Assert.Equal("English Question", result.Translations["en"].QuestionText);
+        Assert.Equal("Pergunta", result.Translations["pt"].QuestionText);
+        Assert.Equal("Pregunta", result.Translations["es"].QuestionText);
+        Assert.Equal("Question", result.Translations["fr"].QuestionText);
+    }
+
+    [Fact]
+    public async Task AddQuestionWithTranslationsAsync_NewQuestion_CreatesQuestionWithAllTranslations()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = TestDbContextFactory.CreateQuizWithLanguage("Test Quiz");
+        db.Quizzes.Add(quiz);
+        await db.SaveChangesAsync();
+        var service = new QuizService(db);
+
+        // Add a second language
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Act
+        var result = await service.AddQuestionWithTranslationsAsync(quiz.Id, new UpdateQuestionTranslationsRequest(
+            20,
+            2,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("What is 2+2?", new List<string> { "3", "4", "5", "6" }),
+                ["pt"] = new QuestionTranslationContentDto("Quanto é 2+2?", new List<string> { "3", "4", "5", "6" })
+            }
+        ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEqual(Guid.Empty, result.Id);
+        Assert.Equal(20, result.TimeLimitSeconds);
+        Assert.Equal(2, result.CorrectAnswerIndex);
+        Assert.Equal(4, result.AnswerOptionIds.Count);
+        Assert.Equal("What is 2+2?", result.Translations["en"].QuestionText);
+        Assert.Equal("Quanto é 2+2?", result.Translations["pt"].QuestionText);
+    }
+
+    [Fact]
+    public async Task AddQuestionWithTranslationsAsync_NewQuestion_PersistsToDatabase()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = TestDbContextFactory.CreateQuizWithLanguage("Test Quiz");
+        db.Quizzes.Add(quiz);
+        await db.SaveChangesAsync();
+        var service = new QuizService(db);
+
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Act
+        var result = await service.AddQuestionWithTranslationsAsync(quiz.Id, new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("English Q", new List<string> { "A", "B", "C", "D" }),
+                ["pt"] = new QuestionTranslationContentDto("Portuguese Q", new List<string> { "A", "B", "C", "D" })
+            }
+        ));
+
+        // Assert - Verify in database
+        Assert.NotNull(result);
+        
+        var savedQuestion = await db.Questions.FindAsync(result.Id);
+        Assert.NotNull(savedQuestion);
+
+        var questionTranslations = db.QuestionTranslations.Where(t => t.QuestionId == result.Id).ToList();
+        Assert.Equal(2, questionTranslations.Count);
+        Assert.Contains(questionTranslations, t => t.LanguageCode == "en");
+        Assert.Contains(questionTranslations, t => t.LanguageCode == "pt");
+
+        var answerTranslations = db.AnswerOptionTranslations
+            .Where(t => result.AnswerOptionIds.Contains(t.AnswerOptionId))
+            .ToList();
+        Assert.Equal(8, answerTranslations.Count); // 4 answers × 2 languages
+    }
+
+    [Fact]
+    public async Task UpdateQuestionTranslationsAsync_UpdateExistingAndAddNew_BothWork()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db, 1);
+        var service = new QuizService(db);
+        var questionId = quiz.Questions.First().Id;
+
+        // First update - just English
+        await service.UpdateQuestionTranslationsAsync(questionId, new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("Initial English", new List<string> { "A", "B", "C", "D" })
+            }
+        ));
+
+        // Add a new language
+        await service.AddQuizLanguageAsync(quiz.Id, "pt");
+
+        // Act - Update English and add Portuguese
+        var result = await service.UpdateQuestionTranslationsAsync(questionId, new UpdateQuestionTranslationsRequest(
+            20,
+            1,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("Updated English", new List<string> { "A1", "B1", "C1", "D1" }),
+                ["pt"] = new QuestionTranslationContentDto("New Portuguese", new List<string> { "A-pt", "B-pt", "C-pt", "D-pt" })
+            }
+        ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Updated English", result.Translations["en"].QuestionText);
+        Assert.Equal("New Portuguese", result.Translations["pt"].QuestionText);
+        Assert.Equal(20, result.TimeLimitSeconds);
+        Assert.Equal(1, result.CorrectAnswerIndex);
+    }
+
+    [Fact]
+    public async Task UpdateQuestionTranslationsAsync_NonExistentQuestion_ReturnsNull()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var service = new QuizService(db);
+
+        // Act
+        var result = await service.UpdateQuestionTranslationsAsync(Guid.NewGuid(), new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("Test", new List<string> { "A", "B", "C", "D" })
+            }
+        ));
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task AddQuestionWithTranslationsAsync_NonExistentQuiz_ReturnsNull()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var service = new QuizService(db);
+
+        // Act
+        var result = await service.AddQuestionWithTranslationsAsync(Guid.NewGuid(), new UpdateQuestionTranslationsRequest(
+            15,
+            0,
+            new Dictionary<string, QuestionTranslationContentDto>
+            {
+                ["en"] = new QuestionTranslationContentDto("Test", new List<string> { "A", "B", "C", "D" })
+            }
+        ));
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    #endregion
 }

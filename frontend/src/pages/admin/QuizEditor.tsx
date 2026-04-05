@@ -11,11 +11,12 @@ import {
   IconButton,
   List,
   ListItem,
-  Checkbox,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
   Divider,
   CircularProgress,
   Alert,
-  FormControlLabel,
   Switch,
   Tooltip,
   Chip,
@@ -23,6 +24,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tabs,
+  Tab,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
@@ -34,7 +37,7 @@ import ImageIcon from '@mui/icons-material/Image'
 import StarIcon from '@mui/icons-material/Star'
 import LanguageIcon from '@mui/icons-material/Language'
 import { quizApi } from '../../services/api'
-import type { Question, QuizLanguage } from '../../types'
+import type { QuizLanguage, QuizWithTranslations, QuestionWithTranslations, QuestionTranslationContent } from '../../types'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -50,26 +53,30 @@ const SUPPORTED_QUIZ_LANGUAGES = [
 
 interface QuestionForm {
   id?: string
-  text: string
   imageUrl?: string
   timeLimitSeconds: number
-  answerOptions: {
-    id?: string
-    text: string
-    isCorrect: boolean
-  }[]
+  correctAnswerIndex: number
+  answerOptionIds: string[]
+  translations: Record<string, QuestionTranslationContent>
 }
 
-const defaultQuestion: QuestionForm = {
-  text: '',
-  timeLimitSeconds: 15,
-  answerOptions: [
-    { text: '', isCorrect: true },
-    { text: '', isCorrect: false },
-    { text: '', isCorrect: false },
-    { text: '', isCorrect: false },
-  ],
+const createEmptyTranslations = (languages: QuizLanguage[]): Record<string, QuestionTranslationContent> => {
+  const translations: Record<string, QuestionTranslationContent> = {}
+  for (const lang of languages) {
+    translations[lang.languageCode] = {
+      questionText: '',
+      answerTexts: ['', '', '', ''],
+    }
+  }
+  return translations
 }
+
+const defaultQuestion = (languages: QuizLanguage[]): QuestionForm => ({
+  timeLimitSeconds: 15,
+  correctAnswerIndex: 0,
+  answerOptionIds: [],
+  translations: createEmptyTranslations(languages),
+})
 
 export default function QuizEditor() {
   const { t } = useTranslation()
@@ -89,6 +96,7 @@ export default function QuizEditor() {
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null)
   const [languages, setLanguages] = useState<QuizLanguage[]>([])
   const [newLanguageCode, setNewLanguageCode] = useState('')
+  const [selectedLanguageTabs, setSelectedLanguageTabs] = useState<Record<number, string>>({})
 
   useEffect(() => {
     if (id) {
@@ -98,23 +106,20 @@ export default function QuizEditor() {
 
   const loadQuiz = async (quizId: string) => {
     try {
-      const quiz = await quizApi.getById(quizId)
+      const quiz: QuizWithTranslations = await quizApi.getWithTranslations(quizId)
       setTitle(quiz.title)
       setDescription(quiz.description || '')
       setFixedJoinCode(quiz.fixedJoinCode || null)
       setUseFixedJoinCode(!!quiz.fixedJoinCode)
       setLanguages(quiz.languages || [])
       setQuestions(
-        quiz.questions.map((q) => ({
+        quiz.questions.map((q: QuestionWithTranslations) => ({
           id: q.id,
-          text: q.text,
           imageUrl: q.imageUrl,
           timeLimitSeconds: q.timeLimitSeconds,
-          answerOptions: q.answerOptions.map((a) => ({
-            id: a.id,
-            text: a.text,
-            isCorrect: a.isCorrect,
-          })),
+          correctAnswerIndex: q.correctAnswerIndex,
+          answerOptionIds: q.answerOptionIds,
+          translations: q.translations,
         }))
       )
     } catch (err) {
@@ -124,8 +129,23 @@ export default function QuizEditor() {
     }
   }
 
+  const getDefaultLanguage = (): string => {
+    return languages.find(l => l.isDefault)?.languageCode || languages[0]?.languageCode || 'en'
+  }
+
+  const getSelectedLanguageTab = (questionIndex: number): string => {
+    return selectedLanguageTabs[questionIndex] || getDefaultLanguage()
+  }
+
+  const handleLanguageTabChange = (questionIndex: number, languageCode: string) => {
+    setSelectedLanguageTabs(prev => ({
+      ...prev,
+      [questionIndex]: languageCode,
+    }))
+  }
+
   const handleAddQuestion = () => {
-    setQuestions([...questions, { ...defaultQuestion, answerOptions: defaultQuestion.answerOptions.map(a => ({...a})) }])
+    setQuestions([...questions, defaultQuestion(languages)])
     setExpandedQuestion(questions.length)
   }
 
@@ -143,41 +163,53 @@ export default function QuizEditor() {
     setExpandedQuestion(null)
   }
 
-  const handleQuestionChange = (index: number, field: keyof QuestionForm, value: unknown) => {
+  const handleTimeLimitChange = (index: number, value: number) => {
     const updated = [...questions]
-    updated[index] = { ...updated[index], [field]: value }
+    updated[index] = { ...updated[index], timeLimitSeconds: value }
     setQuestions(updated)
   }
 
-  const handleAnswerChange = (qIndex: number, aIndex: number, field: 'text' | 'isCorrect', value: unknown) => {
+  const handleCorrectAnswerChange = (index: number, answerIndex: number) => {
     const updated = [...questions]
-    const answers = [...updated[qIndex].answerOptions]
-    
-    if (field === 'isCorrect' && value === true) {
-      // Only one correct answer
-      answers.forEach((a, i) => {
-        a.isCorrect = i === aIndex
-      })
-    } else {
-      answers[aIndex] = { ...answers[aIndex], [field]: value }
+    updated[index] = { ...updated[index], correctAnswerIndex: answerIndex }
+    setQuestions(updated)
+  }
+
+  const handleQuestionTextChange = (qIndex: number, languageCode: string, text: string) => {
+    const updated = [...questions]
+    const translations = { ...updated[qIndex].translations }
+    translations[languageCode] = {
+      ...translations[languageCode],
+      questionText: text,
     }
-    
-    updated[qIndex].answerOptions = answers
+    updated[qIndex] = { ...updated[qIndex], translations }
+    setQuestions(updated)
+  }
+
+  const handleAnswerTextChange = (qIndex: number, languageCode: string, aIndex: number, text: string) => {
+    const updated = [...questions]
+    const translations = { ...updated[qIndex].translations }
+    const answerTexts = [...(translations[languageCode]?.answerTexts || ['', '', '', ''])]
+    answerTexts[aIndex] = text
+    translations[languageCode] = {
+      ...translations[languageCode],
+      answerTexts,
+    }
+    updated[qIndex] = { ...updated[qIndex], translations }
     setQuestions(updated)
   }
 
   const handleSaveQuestion = async (index: number) => {
     const question = questions[index]
-    if (!question.text.trim()) {
+    const defaultLang = getDefaultLanguage()
+    const defaultTranslation = question.translations[defaultLang]
+    
+    if (!defaultTranslation?.questionText.trim()) {
       setError(t('quizEditor.questionTextRequired'))
       return
     }
-    if (!question.answerOptions.some((a) => a.text.trim())) {
+    if (!defaultTranslation?.answerTexts.some((a) => a.trim())) {
       setError(t('quizEditor.atLeastOneAnswer'))
-      return
-    }
-    if (!question.answerOptions.some((a) => a.isCorrect)) {
-      setError(t('quizEditor.markOneCorrect'))
       return
     }
 
@@ -185,25 +217,32 @@ export default function QuizEditor() {
     setError('')
 
     try {
+      const requestData = {
+        timeLimitSeconds: question.timeLimitSeconds,
+        correctAnswerIndex: question.correctAnswerIndex,
+        translations: question.translations,
+      }
+
       if (question.id) {
-        // Update existing
-        await quizApi.updateQuestion(question.id, {
-          text: question.text,
-          timeLimitSeconds: question.timeLimitSeconds,
-          answerOptions: question.answerOptions.filter((a) => a.text.trim()),
-        })
+        // Update existing question
+        const result = await quizApi.updateQuestionTranslations(question.id, requestData)
+        const updated = [...questions]
+        updated[index] = {
+          ...updated[index],
+          translations: result.translations,
+          correctAnswerIndex: result.correctAnswerIndex,
+        }
+        setQuestions(updated)
       } else if (id) {
         // Add new question to existing quiz
-        const result = await quizApi.addQuestion(id, {
-          text: question.text,
-          timeLimitSeconds: question.timeLimitSeconds,
-          answerOptions: question.answerOptions
-            .filter((a) => a.text.trim())
-            .map((a) => ({ text: a.text, isCorrect: a.isCorrect })),
-        }) as Question
-        // Update with returned ID
+        const result = await quizApi.addQuestionWithTranslations(id, requestData)
         const updated = [...questions]
-        updated[index] = { ...question, id: result.id }
+        updated[index] = {
+          ...question,
+          id: result.id,
+          answerOptionIds: result.answerOptionIds,
+          translations: result.translations,
+        }
         setQuestions(updated)
       }
       setExpandedQuestion(null)
@@ -269,8 +308,25 @@ export default function QuizEditor() {
 
     try {
       const newLang = await quizApi.addLanguage(id, newLanguageCode)
-      setLanguages([...languages, newLang])
+      const updatedLanguages = [...languages, newLang]
+      setLanguages(updatedLanguages)
       setNewLanguageCode('')
+      
+      // Copy translations from default language to the new language for all questions
+      const defaultLang = getDefaultLanguage()
+      setQuestions(questions.map(q => {
+        const defaultTranslation = q.translations[defaultLang]
+        return {
+          ...q,
+          translations: {
+            ...q.translations,
+            [newLanguageCode]: {
+              questionText: defaultTranslation?.questionText || '',
+              answerTexts: [...(defaultTranslation?.answerTexts || ['', '', '', ''])],
+            },
+          },
+        }
+      }))
     } catch (err) {
       setError(t('quizEditor.failedToAddLanguage'))
     } finally {
@@ -313,6 +369,24 @@ export default function QuizEditor() {
     try {
       await quizApi.deleteLanguage(id, languageCode)
       setLanguages(languages.filter(l => l.languageCode !== languageCode))
+      
+      // Remove translations for the deleted language from all questions
+      setQuestions(questions.map(q => {
+        const translations = { ...q.translations }
+        delete translations[languageCode]
+        return { ...q, translations }
+      }))
+      
+      // Reset selected tabs if they were on the deleted language
+      setSelectedLanguageTabs(prev => {
+        const updated = { ...prev }
+        for (const key of Object.keys(updated)) {
+          if (updated[parseInt(key)] === languageCode) {
+            delete updated[parseInt(key)]
+          }
+        }
+        return updated
+      })
     } catch (err) {
       setError(t('quizEditor.failedToDeleteLanguage'))
     } finally {
@@ -361,6 +435,11 @@ export default function QuizEditor() {
         <CircularProgress />
       </Box>
     )
+  }
+
+  const getQuestionPreviewText = (question: QuestionForm): string => {
+    const defaultLang = getDefaultLanguage()
+    return question.translations[defaultLang]?.questionText || t('quizEditor.noText')
   }
 
   return (
@@ -549,7 +628,7 @@ export default function QuizEditor() {
                   sx={{ cursor: 'pointer' }}
                 >
                   <Typography sx={{ flex: 1 }}>
-                    {qIndex + 1}. {question.text || t('quizEditor.noText')}
+                    {qIndex + 1}. {getQuestionPreviewText(question)}
                   </Typography>
                   <IconButton
                     color="error"
@@ -565,93 +644,185 @@ export default function QuizEditor() {
                 {expandedQuestion === qIndex && (
                   <Box sx={{ p: 3, pt: 0 }}>
                     <Divider sx={{ mb: 2 }} />
-                    <TextField
-                      fullWidth
-                      label={t('quizEditor.questionText')}
-                      value={question.text}
-                      onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      type="number"
-                      label={t('quizEditor.timeLimitSeconds')}
-                      value={question.timeLimitSeconds}
-                      onChange={(e) => handleQuestionChange(qIndex, 'timeLimitSeconds', parseInt(e.target.value) || 15)}
-                      sx={{ mb: 2, width: 200 }}
-                    />
-
-                    {/* Image Upload */}
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                        {t('quizEditor.questionImage')}
+                    
+                    {/* Shared fields - above tabs */}
+                    <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.800', borderRadius: 1, color: 'grey.100' }}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+                        {t('quizEditor.sharedSettings')}
                       </Typography>
-                      {question.imageUrl ? (
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                          <Box
-                            component="img"
-                            src={`${API_URL}${question.imageUrl}`}
-                            alt="Question image"
-                            sx={{
-                              maxWidth: 200,
-                              maxHeight: 150,
-                              objectFit: 'contain',
-                              borderRadius: 1,
-                              border: '1px solid',
-                              borderColor: 'divider',
-                            }}
-                          />
+                      
+                      <TextField
+                        type="number"
+                        label={t('quizEditor.timeLimitSeconds')}
+                        value={question.timeLimitSeconds}
+                        onChange={(e) => handleTimeLimitChange(qIndex, parseInt(e.target.value) || 15)}
+                        sx={{ mb: 2, width: 200 }}
+                        size="small"
+                      />
+
+                      {/* Image Upload */}
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                          {t('quizEditor.questionImage')}
+                        </Typography>
+                        {question.imageUrl ? (
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                            <Box
+                              component="img"
+                              src={`${API_URL}${question.imageUrl}`}
+                              alt="Question image"
+                              sx={{
+                                maxWidth: 200,
+                                maxHeight: 150,
+                                objectFit: 'contain',
+                                borderRadius: 1,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                              }}
+                            />
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              startIcon={<DeleteIcon />}
+                              onClick={() => handleImageDelete(qIndex)}
+                              disabled={saving}
+                            >
+                              {t('quizEditor.remove')}
+                            </Button>
+                          </Box>
+                        ) : (
                           <Button
                             variant="outlined"
-                            color="error"
+                            component="label"
                             size="small"
-                            startIcon={<DeleteIcon />}
-                            onClick={() => handleImageDelete(qIndex)}
-                            disabled={saving}
+                            startIcon={<ImageIcon />}
+                            disabled={saving || !question.id}
                           >
-                            {t('quizEditor.remove')}
+                            {question.id ? t('quizEditor.uploadImage') : t('quizEditor.saveQuestionFirst')}
+                            <input
+                              type="file"
+                              hidden
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) handleImageUpload(qIndex, file)
+                                e.target.value = ''
+                              }}
+                            />
                           </Button>
-                        </Box>
-                      ) : (
-                        <Button
-                          variant="outlined"
-                          component="label"
-                          startIcon={<ImageIcon />}
-                          disabled={saving || !question.id}
+                        )}
+                      </Box>
+
+                      {/* Correct Answer Selector */}
+                      <Box>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                          {t('quizEditor.correctAnswer')}
+                        </Typography>
+                        <RadioGroup
+                          row
+                          value={question.correctAnswerIndex}
+                          onChange={(e) => handleCorrectAnswerChange(qIndex, parseInt(e.target.value))}
                         >
-                          {question.id ? t('quizEditor.uploadImage') : t('quizEditor.saveQuestionFirst')}
-                          <input
-                            type="file"
-                            hidden
-                            accept="image/jpeg,image/png,image/gif,image/webp"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) handleImageUpload(qIndex, file)
-                              e.target.value = ''
-                            }}
-                          />
-                        </Button>
-                      )}
+                          {[0, 1, 2, 3].map((index) => (
+                            <FormControlLabel
+                              key={index}
+                              value={index}
+                              control={<Radio size="small" color="success" />}
+                              label={t('quizEditor.answerNumber', { number: index + 1 })}
+                            />
+                          ))}
+                        </RadioGroup>
+                      </Box>
                     </Box>
 
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                      {t('quizEditor.answersHint')}
-                    </Typography>
-                    {question.answerOptions.map((answer, aIndex) => (
-                      <Box key={aIndex} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Checkbox
-                          checked={answer.isCorrect}
-                          onChange={(e) => handleAnswerChange(qIndex, aIndex, 'isCorrect', e.target.checked)}
-                          color="success"
-                        />
-                        <TextField
-                          fullWidth
-                          size="small"
-                          placeholder={t('quizEditor.answerPlaceholder', { number: aIndex + 1 })}
-                          value={answer.text}
-                          onChange={(e) => handleAnswerChange(qIndex, aIndex, 'text', e.target.value)}
-                        />
-                      </Box>
-                    ))}
+                    {/* Language Tabs */}
+                    {languages.length > 0 && (
+                      <>
+                        <Tabs
+                          value={getSelectedLanguageTab(qIndex)}
+                          onChange={(_, value) => handleLanguageTabChange(qIndex, value)}
+                          sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+                        >
+                          {/* Sort languages so default appears first */}
+                          {[...languages].sort((a, b) => {
+                            if (a.isDefault) return -1
+                            if (b.isDefault) return 1
+                            return 0
+                          }).map((lang) => {
+                            const langInfo = SUPPORTED_QUIZ_LANGUAGES.find(l => l.code === lang.languageCode)
+                            return (
+                              <Tab
+                                key={lang.languageCode}
+                                value={lang.languageCode}
+                                label={
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    {langInfo?.name || lang.languageCode}
+                                    {lang.isDefault && <StarIcon fontSize="small" sx={{ fontSize: 14 }} />}
+                                  </Box>
+                                }
+                              />
+                            )
+                          })}
+                        </Tabs>
+
+                        {/* Tab Content - Translatable fields */}
+                        {languages.map((lang) => {
+                          const isActive = getSelectedLanguageTab(qIndex) === lang.languageCode
+                          const translation = question.translations[lang.languageCode] || {
+                            questionText: '',
+                            answerTexts: ['', '', '', ''],
+                          }
+                          
+                          return (
+                            <Box
+                              key={lang.languageCode}
+                              sx={{ display: isActive ? 'block' : 'none' }}
+                            >
+                              <TextField
+                                fullWidth
+                                label={t('quizEditor.questionText')}
+                                value={translation.questionText}
+                                onChange={(e) => handleQuestionTextChange(qIndex, lang.languageCode, e.target.value)}
+                                sx={{ mb: 2 }}
+                              />
+                              
+                              <Typography variant="body2" sx={{ mb: 1 }}>
+                                {t('quizEditor.answerTexts')}
+                              </Typography>
+                              {[0, 1, 2, 3].map((aIndex) => (
+                                <Box key={aIndex} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  <Box
+                                    sx={{
+                                      width: 24,
+                                      height: 24,
+                                      borderRadius: '50%',
+                                      bgcolor: question.correctAnswerIndex === aIndex ? 'success.main' : 'grey.300',
+                                      color: question.correctAnswerIndex === aIndex ? 'white' : 'text.secondary',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: 12,
+                                      fontWeight: 'bold',
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {aIndex + 1}
+                                  </Box>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    placeholder={t('quizEditor.answerPlaceholder', { number: aIndex + 1 })}
+                                    value={translation.answerTexts[aIndex] || ''}
+                                    onChange={(e) => handleAnswerTextChange(qIndex, lang.languageCode, aIndex, e.target.value)}
+                                  />
+                                </Box>
+                              ))}
+                            </Box>
+                          )
+                        })}
+                      </>
+                    )}
 
                     <Box sx={{ mt: 2 }}>
                       <Button

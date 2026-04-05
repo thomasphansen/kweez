@@ -313,7 +313,20 @@ describe('SessionContext', () => {
         emit('QuestionReleased', testQuestion)
       })
       
-      expect(result.current.currentQuestion).toEqual(testQuestion)
+      // currentQuestion should be localized to the default language
+      expect(result.current.currentQuestion).toEqual({
+        questionId: testQuestion.questionId,
+        text: testQuestion.translations.en.questionText,
+        imageUrl: undefined,
+        questionIndex: testQuestion.questionIndex,
+        totalQuestions: testQuestion.totalQuestions,
+        timeLimitSeconds: testQuestion.timeLimitSeconds,
+        answers: testQuestion.answerIds.map((id, index) => ({
+          id,
+          text: testQuestion.translations.en.answerTexts[index],
+          index,
+        })),
+      })
     })
 
     it('should clear selectedAnswerId and questionResults on QuestionReleased', () => {

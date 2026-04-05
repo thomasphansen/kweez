@@ -49,6 +49,50 @@ public record SetDefaultLanguageRequest(
     string LanguageCode
 );
 
+// Translation DTOs for editing
+public record QuestionTranslationDto(
+    Guid QuestionId,
+    string LanguageCode,
+    string Text,
+    List<AnswerTranslationDto> AnswerTranslations
+);
+
+public record AnswerTranslationDto(
+    Guid AnswerOptionId,
+    string Text
+);
+
+public record QuizWithTranslationsDto(
+    Guid Id,
+    string Title,
+    string? Description,
+    DateTime CreatedAtUtc,
+    string? FixedJoinCode,
+    List<QuizLanguageDto> Languages,
+    List<QuestionWithTranslationsDto> Questions
+);
+
+public record QuestionWithTranslationsDto(
+    Guid Id,
+    string? ImageUrl,
+    int OrderIndex,
+    int TimeLimitSeconds,
+    int CorrectAnswerIndex,
+    List<Guid> AnswerOptionIds,
+    Dictionary<string, QuestionTranslationContentDto> Translations
+);
+
+public record QuestionTranslationContentDto(
+    string QuestionText,
+    List<string> AnswerTexts
+);
+
+public record UpdateQuestionTranslationsRequest(
+    int TimeLimitSeconds,
+    int CorrectAnswerIndex,
+    Dictionary<string, QuestionTranslationContentDto> Translations
+);
+
 // Question DTOs
 public record QuestionDto(
     Guid Id,
@@ -113,19 +157,21 @@ public record SessionStateDto(
     int? CurrentQuestionIndex,
     int TotalQuestions,
     List<ParticipantDto> Participants,
+    List<string> AvailableLanguages,
+    string DefaultLanguage,
     ActiveQuestionDto? ActiveQuestion = null
 );
 
 // Active question info for reconnecting players
 public record ActiveQuestionDto(
     Guid QuestionId,
-    string Text,
     string? ImageUrl,
     int QuestionIndex,
     int TotalQuestions,
     int TimeLimitSeconds,
     int RemainingSeconds,
-    List<AnswerChoiceDto> Answers
+    List<Guid> AnswerIds,
+    Dictionary<string, QuestionTranslationForPlayerDto> Translations
 );
 
 // Participant DTOs
@@ -149,12 +195,20 @@ public record JoinSessionResponse(
 // Game DTOs (for SignalR)
 public record QuestionReleasedDto(
     Guid QuestionId,
-    string Text,
     string? ImageUrl,
     int QuestionIndex,
     int TotalQuestions,
     int TimeLimitSeconds,
-    List<AnswerChoiceDto> Answers
+    List<Guid> AnswerIds,
+    Dictionary<string, QuestionTranslationForPlayerDto> Translations,
+    List<string> AvailableLanguages,
+    string DefaultLanguage
+);
+
+// Translation content sent to players during gameplay
+public record QuestionTranslationForPlayerDto(
+    string QuestionText,
+    List<string> AnswerTexts
 );
 
 public record AnswerChoiceDto(

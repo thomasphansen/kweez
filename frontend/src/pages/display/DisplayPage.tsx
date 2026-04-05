@@ -21,7 +21,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { sessionApi } from '../../services/api'
 import { quizHub } from '../../services/signalr'
 import { answerColors } from '../../theme'
-import type { Session, SessionState, QuestionReleased, QuestionResults, LeaderboardEntry } from '../../types'
+import { localizeQuestion, localizeActiveQuestion, type LocalizedQuestion } from '../../utils/questionLocalization'
+import type { Session, SessionState, QuestionResults, LeaderboardEntry } from '../../types'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -34,8 +35,8 @@ export default function DisplayPage() {
   const [displayState, setDisplayState] = useState<DisplayState>('loading')
   const [session, setSession] = useState<Session | null>(null)
   const [sessionState, setSessionState] = useState<SessionState | null>(null)
-  const [currentQuestion, setCurrentQuestion] = useState<QuestionReleased | null>(null)
-  const [lastQuestion, setLastQuestion] = useState<QuestionReleased | null>(null)
+  const [currentQuestion, setCurrentQuestion] = useState<LocalizedQuestion | null>(null)
+  const [lastQuestion, setLastQuestion] = useState<LocalizedQuestion | null>(null)
   const [questionResults, setQuestionResults] = useState<QuestionResults | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [timeLeft, setTimeLeft] = useState(0)
@@ -43,7 +44,7 @@ export default function DisplayPage() {
 
   const isMountedRef = useRef(true)
   const questionStartTimeRef = useRef<number | null>(null)
-  const currentQuestionRef = useRef<QuestionReleased | null>(null)
+  const currentQuestionRef = useRef<LocalizedQuestion | null>(null)
 
   // Initialize session and SignalR connection
   useEffect(() => {
@@ -128,14 +129,13 @@ export default function DisplayPage() {
         if (state.status === 'Finished') {
           setDisplayState('final')
         } else if (state.status === 'Active' && state.activeQuestion) {
-          setCurrentQuestion({
-            questionId: state.activeQuestion.questionId,
-            text: state.activeQuestion.text,
-            questionIndex: state.activeQuestion.questionIndex,
-            totalQuestions: state.activeQuestion.totalQuestions,
-            timeLimitSeconds: state.activeQuestion.remainingSeconds,
-            answers: state.activeQuestion.answers,
-          })
+          // Localize using quiz default language (display view)
+          const localized = localizeActiveQuestion(
+            state.activeQuestion,
+            state.availableLanguages,
+            state.defaultLanguage
+          )
+          setCurrentQuestion(localized)
           questionStartTimeRef.current = Date.now()
           setTimeLeft(state.activeQuestion.remainingSeconds)
           setDisplayState('question')
@@ -170,8 +170,10 @@ export default function DisplayPage() {
 
     unsubscribers.push(
       quizHub.on('QuestionReleased', (question) => {
-        setCurrentQuestion(question)
-        currentQuestionRef.current = question
+        // Localize using quiz default language (display view)
+        const localized = localizeQuestion(question)
+        setCurrentQuestion(localized)
+        currentQuestionRef.current = localized
         setQuestionResults(null)
         questionStartTimeRef.current = Date.now()
         setTimeLeft(question.timeLimitSeconds)

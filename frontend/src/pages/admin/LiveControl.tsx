@@ -29,7 +29,8 @@ import TvIcon from '@mui/icons-material/Tv'
 import { QRCodeSVG } from 'qrcode.react'
 import { sessionApi } from '../../services/api'
 import { quizHub } from '../../services/signalr'
-import type { Session, SessionState, QuestionReleased, QuestionResults, LeaderboardEntry } from '../../types'
+import { localizeQuestion, type LocalizedQuestion } from '../../utils/questionLocalization'
+import type { Session, SessionState, QuestionResults, LeaderboardEntry } from '../../types'
 
 export default function LiveControl() {
   const { t } = useTranslation()
@@ -39,7 +40,7 @@ export default function LiveControl() {
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
   const [sessionState, setSessionState] = useState<SessionState | null>(null)
-  const [currentQuestion, setCurrentQuestion] = useState<QuestionReleased | null>(null)
+  const [currentQuestion, setCurrentQuestion] = useState<LocalizedQuestion | null>(null)
   const [questionResults, setQuestionResults] = useState<QuestionResults | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isConnected, setIsConnected] = useState(false)
@@ -143,7 +144,8 @@ export default function LiveControl() {
 
     unsubscribers.push(
       quizHub.on('QuestionReleased', (question) => {
-        setCurrentQuestion(question)
+        // Localize using quiz default language (admin view)
+        setCurrentQuestion(localizeQuestion(question))
         setQuestionResults(null)
       })
     )

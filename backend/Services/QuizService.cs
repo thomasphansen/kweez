@@ -24,6 +24,11 @@ public interface IQuizService
     Task<QuizLanguageDto?> AddQuizLanguageAsync(Guid quizId, string languageCode);
     Task<bool> SetDefaultLanguageAsync(Guid quizId, string languageCode);
     Task<bool> DeleteQuizLanguageAsync(Guid quizId, string languageCode);
+    
+    // Translation management
+    Task<QuizWithTranslationsDto?> GetQuizWithTranslationsAsync(Guid id);
+    Task<QuestionWithTranslationsDto?> UpdateQuestionTranslationsAsync(Guid questionId, UpdateQuestionTranslationsRequest request);
+    Task<QuestionWithTranslationsDto?> AddQuestionWithTranslationsAsync(Guid quizId, UpdateQuestionTranslationsRequest request);
 }
 
 public class QuizService : IQuizService
@@ -504,8 +509,283 @@ public class QuizService : IQuizService
         // Cannot delete the default language
         if (language.IsDefault) return false;
 
-        _db.QuizLanguages.Remove(language);
+        // Delete all translations for this language
+        // Clear change tracker to avoid tracking conflicts, then query and delete fresh entities
+        _db.ChangeTracker.Clear();
+        
+        var questionIds = await _db.Questions
+            .Where(q => q.QuizId == quizId)
+            .Select(q => q.Id)
+            .ToListAsync();
+
+        var questionTranslations = await _db.QuestionTranslations
+            .Where(t => questionIds.Contains(t.QuestionId) && t.LanguageCode == languageCode)
+            .ToListAsync();
+        
+        _db.QuestionTranslations.RemoveRange(questionTranslations);
+
+        var answerOptionIds = await _db.AnswerOptions
+            .Where(a => questionIds.Contains(a.QuestionId))
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var answerTranslations = await _db.AnswerOptionTranslations
+            .Where(t => answerOptionIds.Contains(t.AnswerOptionId) && t.LanguageCode == languageCode)
+            .ToListAsync();
+        
+        _db.AnswerOptionTranslations.RemoveRange(answerTranslations);
+        
+        // Re-fetch language since we cleared tracker
+        language = await _db.QuizLanguages.FirstOrDefaultAsync(l => l.QuizId == quizId && l.LanguageCode == languageCode);
+        if (language != null)
+        {
+            _db.QuizLanguages.Remove(language);
+        }
+        
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    // Translation management methods
+
+    public async Task<QuizWithTranslationsDto?> GetQuizWithTranslationsAsync(Guid id)
+    {
+        var quiz = await _db.Quizzes
+            .Include(q => q.Languages)
+            .Include(q => q.Questions.OrderBy(qu => qu.OrderIndex))
+                .ThenInclude(q => q.Translations)
+            .Include(q => q.Questions)
+                .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                    .ThenInclude(a => a.Translations)
+            .FirstOrDefaultAsync(q => q.Id == id);
+
+        if (quiz == null) return null;
+
+        var questions = quiz.Questions.Select(q =>
+        {
+            var answerOptionIds = q.AnswerOptions.Select(a => a.Id).ToList();
+            var correctAnswerIndex = q.AnswerOptions.ToList().FindIndex(a => a.IsCorrect);
+
+            // Build translations dictionary
+            var translations = new Dictionary<string, QuestionTranslationContentDto>();
+            foreach (var lang in quiz.Languages)
+            {
+                var questionText = q.Translations
+                    .FirstOrDefault(t => t.LanguageCode == lang.LanguageCode)?.Text ?? "";
+                var answerTexts = q.AnswerOptions
+                    .Select(a => a.Translations
+                        .FirstOrDefault(t => t.LanguageCode == lang.LanguageCode)?.Text ?? "")
+                    .ToList();
+                translations[lang.LanguageCode] = new QuestionTranslationContentDto(questionText, answerTexts);
+            }
+
+            return new QuestionWithTranslationsDto(
+                q.Id,
+                q.ImageUrl,
+                q.OrderIndex,
+                q.TimeLimitSeconds,
+                correctAnswerIndex,
+                answerOptionIds,
+                translations
+            );
+        }).ToList();
+
+        return new QuizWithTranslationsDto(
+            quiz.Id,
+            quiz.Title,
+            quiz.Description,
+            quiz.CreatedAtUtc,
+            quiz.FixedJoinCode,
+            quiz.Languages.Select(l => new QuizLanguageDto(l.Id, l.LanguageCode, l.IsDefault)).ToList(),
+            questions
+        );
+    }
+
+    public async Task<QuestionWithTranslationsDto?> UpdateQuestionTranslationsAsync(Guid questionId, UpdateQuestionTranslationsRequest request)
+    {
+        var question = await _db.Questions
+            .Include(q => q.Quiz)
+                .ThenInclude(q => q.Languages)
+            .Include(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                .ThenInclude(a => a.Translations)
+            .Include(q => q.Translations)
+            .FirstOrDefaultAsync(q => q.Id == questionId);
+
+        if (question == null) return null;
+
+        // Update time limit
+        question.TimeLimitSeconds = request.TimeLimitSeconds;
+
+        // Update correct answer
+        var answerOptions = question.AnswerOptions.ToList();
+        for (int i = 0; i < answerOptions.Count; i++)
+        {
+            answerOptions[i].IsCorrect = i == request.CorrectAnswerIndex;
+        }
+
+        // Update translations for each language
+        foreach (var (languageCode, content) in request.Translations)
+        {
+            // Update question translation
+            var questionTranslation = question.Translations.FirstOrDefault(t => t.LanguageCode == languageCode);
+            if (questionTranslation != null)
+            {
+                questionTranslation.Text = content.QuestionText;
+            }
+            else
+            {
+                // Add new translation directly to DbContext to avoid tracking issues
+                var newTranslation = new QuestionTranslation
+                {
+                    Id = Guid.NewGuid(),
+                    QuestionId = questionId,
+                    LanguageCode = languageCode,
+                    Text = content.QuestionText
+                };
+                _db.QuestionTranslations.Add(newTranslation);
+                question.Translations.Add(newTranslation);
+            }
+
+            // Update answer translations
+            for (int i = 0; i < answerOptions.Count && i < content.AnswerTexts.Count; i++)
+            {
+                var answerTranslation = answerOptions[i].Translations.FirstOrDefault(t => t.LanguageCode == languageCode);
+                if (answerTranslation != null)
+                {
+                    answerTranslation.Text = content.AnswerTexts[i];
+                }
+                else
+                {
+                    // Add new translation directly to DbContext to avoid tracking issues
+                    var newAnswerTranslation = new AnswerOptionTranslation
+                    {
+                        Id = Guid.NewGuid(),
+                        AnswerOptionId = answerOptions[i].Id,
+                        LanguageCode = languageCode,
+                        Text = content.AnswerTexts[i]
+                    };
+                    _db.AnswerOptionTranslations.Add(newAnswerTranslation);
+                    answerOptions[i].Translations.Add(newAnswerTranslation);
+                }
+            }
+        }
+
+        await _db.SaveChangesAsync();
+
+        // Return updated question
+        var answerOptionIds = answerOptions.Select(a => a.Id).ToList();
+        var correctAnswerIndex = answerOptions.FindIndex(a => a.IsCorrect);
+
+        var translations = new Dictionary<string, QuestionTranslationContentDto>();
+        foreach (var lang in question.Quiz.Languages)
+        {
+            var questionText = question.Translations
+                .FirstOrDefault(t => t.LanguageCode == lang.LanguageCode)?.Text ?? "";
+            var answerTexts = answerOptions
+                .Select(a => a.Translations
+                    .FirstOrDefault(t => t.LanguageCode == lang.LanguageCode)?.Text ?? "")
+                .ToList();
+            translations[lang.LanguageCode] = new QuestionTranslationContentDto(questionText, answerTexts);
+        }
+
+        return new QuestionWithTranslationsDto(
+            question.Id,
+            question.ImageUrl,
+            question.OrderIndex,
+            question.TimeLimitSeconds,
+            correctAnswerIndex,
+            answerOptionIds,
+            translations
+        );
+    }
+
+    public async Task<QuestionWithTranslationsDto?> AddQuestionWithTranslationsAsync(Guid quizId, UpdateQuestionTranslationsRequest request)
+    {
+        var quiz = await _db.Quizzes
+            .Include(q => q.Languages)
+            .Include(q => q.Questions)
+            .FirstOrDefaultAsync(q => q.Id == quizId);
+
+        if (quiz == null) return null;
+
+        var maxOrder = quiz.Questions.Any() ? quiz.Questions.Max(q => q.OrderIndex) : -1;
+
+        var questionId = Guid.NewGuid();
+        var question = new Question
+        {
+            Id = questionId,
+            QuizId = quizId,
+            TimeLimitSeconds = request.TimeLimitSeconds,
+            OrderIndex = maxOrder + 1,
+            CreatedAtUtc = DateTime.UtcNow,
+            Translations = new List<QuestionTranslation>(),
+            AnswerOptions = new List<AnswerOption>()
+        };
+
+        // Create 4 answer options
+        var answerOptionIds = new List<Guid>();
+        for (int i = 0; i < 4; i++)
+        {
+            var answerId = Guid.NewGuid();
+            answerOptionIds.Add(answerId);
+            question.AnswerOptions.Add(new AnswerOption
+            {
+                Id = answerId,
+                QuestionId = questionId,
+                OrderIndex = i,
+                IsCorrect = i == request.CorrectAnswerIndex,
+                Translations = new List<AnswerOptionTranslation>()
+            });
+        }
+
+        // Add translations for each language
+        var answerOptions = question.AnswerOptions.ToList();
+        foreach (var (languageCode, content) in request.Translations)
+        {
+            question.Translations.Add(new QuestionTranslation
+            {
+                Id = Guid.NewGuid(),
+                QuestionId = questionId,
+                LanguageCode = languageCode,
+                Text = content.QuestionText
+            });
+
+            for (int i = 0; i < answerOptions.Count && i < content.AnswerTexts.Count; i++)
+            {
+                answerOptions[i].Translations.Add(new AnswerOptionTranslation
+                {
+                    Id = Guid.NewGuid(),
+                    AnswerOptionId = answerOptions[i].Id,
+                    LanguageCode = languageCode,
+                    Text = content.AnswerTexts[i]
+                });
+            }
+        }
+
+        _db.Questions.Add(question);
+        await _db.SaveChangesAsync();
+
+        // Build response
+        var translations = new Dictionary<string, QuestionTranslationContentDto>();
+        foreach (var lang in quiz.Languages)
+        {
+            var questionText = question.Translations
+                .FirstOrDefault(t => t.LanguageCode == lang.LanguageCode)?.Text ?? "";
+            var answerTexts = answerOptions
+                .Select(a => a.Translations
+                    .FirstOrDefault(t => t.LanguageCode == lang.LanguageCode)?.Text ?? "")
+                .ToList();
+            translations[lang.LanguageCode] = new QuestionTranslationContentDto(questionText, answerTexts);
+        }
+
+        return new QuestionWithTranslationsDto(
+            question.Id,
+            question.ImageUrl,
+            question.OrderIndex,
+            question.TimeLimitSeconds,
+            request.CorrectAnswerIndex,
+            answerOptionIds,
+            translations
+        );
     }
 }

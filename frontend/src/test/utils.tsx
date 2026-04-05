@@ -32,9 +32,40 @@ export function renderWithProviders(
 }
 
 // Test data factories
+
+// Creates a raw QuestionReleased (as received from SignalR)
 export const createTestQuestion = (overrides: Partial<{
   questionId: string
+  imageUrl?: string
+  questionIndex: number
+  totalQuestions: number
+  timeLimitSeconds: number
+  answerIds: string[]
+  translations: Record<string, { questionText: string; answerTexts: string[] }>
+  availableLanguages: string[]
+  defaultLanguage: string
+}> = {}) => ({
+  questionId: 'q1',
+  questionIndex: 0,
+  totalQuestions: 3,
+  timeLimitSeconds: 15,
+  answerIds: ['a1', 'a2', 'a3', 'a4'],
+  translations: {
+    en: {
+      questionText: 'What is 2 + 2?',
+      answerTexts: ['3', '4', '5', '6'],
+    },
+  },
+  availableLanguages: ['en'],
+  defaultLanguage: 'en',
+  ...overrides,
+})
+
+// Creates a LocalizedQuestion (what the context provides after localization)
+export const createTestLocalizedQuestion = (overrides: Partial<{
+  questionId: string
   text: string
+  imageUrl?: string
   questionIndex: number
   totalQuestions: number
   timeLimitSeconds: number
@@ -78,11 +109,15 @@ export const createTestSessionState = (overrides: Partial<{
     totalScore: number
     isConnected: boolean
   }>
+  availableLanguages: string[]
+  defaultLanguage: string
 }> = {}) => ({
   sessionId: 's1',
   status: 'Waiting' as const,
   totalQuestions: 3,
   participants: [createTestParticipant()],
+  availableLanguages: ['en'],
+  defaultLanguage: 'en',
   ...overrides,
 })
 

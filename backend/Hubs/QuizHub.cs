@@ -125,22 +125,29 @@ public class QuizHub : Hub<IQuizHubClient>
         _questionReleaseTimes[sessionId] = releaseTime;
 
         var session = await _sessionService.GetSessionAsync(sessionId);
-        var defaultLanguage = await _sessionService.GetDefaultLanguageAsync(sessionId);
+        var languageInfo = await _sessionService.GetLanguageInfoAsync(sessionId);
         
-        var questionText = question.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "";
+        // Build translations dictionary for all languages
+        var translations = new Dictionary<string, QuestionTranslationForPlayerDto>();
+        foreach (var lang in languageInfo.AvailableLanguages)
+        {
+            var questionText = question.Translations.FirstOrDefault(t => t.LanguageCode == lang)?.Text ?? "";
+            var answerTexts = question.AnswerOptions
+                .Select(a => a.Translations.FirstOrDefault(t => t.LanguageCode == lang)?.Text ?? "")
+                .ToList();
+            translations[lang] = new QuestionTranslationForPlayerDto(questionText, answerTexts);
+        }
         
         var dto = new QuestionReleasedDto(
             question.Id,
-            questionText,
             question.ImageUrl,
             session?.CurrentQuestionIndex ?? 0,
             session?.TotalQuestions ?? 0,
             question.TimeLimitSeconds,
-            question.AnswerOptions.Select((a, i) => new AnswerChoiceDto(
-                a.Id, 
-                a.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "", 
-                i
-            )).ToList()
+            question.AnswerOptions.Select(a => a.Id).ToList(),
+            translations,
+            languageInfo.AvailableLanguages,
+            languageInfo.DefaultLanguage
         );
 
         await Clients.Group(sessionId.ToString()).QuestionReleased(dto);

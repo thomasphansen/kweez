@@ -60,18 +60,25 @@ export interface SessionState {
   currentQuestionIndex?: number
   totalQuestions: number
   participants: Participant[]
+  availableLanguages: string[]
+  defaultLanguage: string
   activeQuestion?: ActiveQuestion
 }
 
 export interface ActiveQuestion {
   questionId: string
-  text: string
   imageUrl?: string
   questionIndex: number
   totalQuestions: number
   timeLimitSeconds: number
   remainingSeconds: number
-  answers: AnswerChoice[]
+  answerIds: string[]
+  translations: Record<string, QuestionTranslationForPlayer>
+}
+
+export interface QuestionTranslationForPlayer {
+  questionText: string
+  answerTexts: string[]
 }
 
 export interface Participant {
@@ -90,12 +97,14 @@ export interface JoinResponse {
 // Game types
 export interface QuestionReleased {
   questionId: string
-  text: string
   imageUrl?: string
   questionIndex: number
   totalQuestions: number
   timeLimitSeconds: number
-  answers: AnswerChoice[]
+  answerIds: string[]
+  translations: Record<string, QuestionTranslationForPlayer>
+  availableLanguages: string[]
+  defaultLanguage: string
 }
 
 export interface AnswerChoice {
@@ -130,4 +139,36 @@ export interface QuestionResults {
   answerCounts: Record<string, number>
   correctAnswerId: string
   leaderboard: LeaderboardEntry[]
+}
+
+// Translation types for quiz editor
+export interface QuestionTranslationContent {
+  questionText: string
+  answerTexts: string[]
+}
+
+export interface QuestionWithTranslations {
+  id: string
+  imageUrl?: string
+  orderIndex: number
+  timeLimitSeconds: number
+  correctAnswerIndex: number
+  answerOptionIds: string[]
+  translations: Record<string, QuestionTranslationContent>
+}
+
+export interface QuizWithTranslations {
+  id: string
+  title: string
+  description?: string
+  createdAtUtc: string
+  fixedJoinCode?: string
+  languages: QuizLanguage[]
+  questions: QuestionWithTranslations[]
+}
+
+export interface UpdateQuestionTranslationsRequest {
+  timeLimitSeconds: number
+  correctAnswerIndex: number
+  translations: Record<string, QuestionTranslationContent>
 }
