@@ -610,4 +610,179 @@ public class SessionServiceTests
     }
 
     #endregion
+
+    #region GetLanguageInfoAsync Tests
+
+    [Fact]
+    public async Task GetLanguageInfoAsync_ReturnsAvailableLanguagesAndDefault()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        
+        // Add additional languages
+        quiz.Languages.Add(new QuizLanguage { QuizId = quiz.Id, LanguageCode = "pt", IsDefault = false });
+        quiz.Languages.Add(new QuizLanguage { QuizId = quiz.Id, LanguageCode = "es", IsDefault = false });
+        await db.SaveChangesAsync();
+        
+        var session = new QuizSession
+        {
+            QuizId = quiz.Id,
+            JoinCode = "TEST01",
+            Status = SessionStatus.Waiting
+        };
+        db.QuizSessions.Add(session);
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Act
+        var result = await service.GetLanguageInfoAsync(session.Id);
+
+        // Assert
+        result.AvailableLanguages.Should().HaveCount(3);
+        result.AvailableLanguages.Should().Contain("en");
+        result.AvailableLanguages.Should().Contain("pt");
+        result.AvailableLanguages.Should().Contain("es");
+        result.DefaultLanguage.Should().Be("en");
+    }
+
+    [Fact]
+    public async Task GetLanguageInfoAsync_ReturnsCorrectDefaultLanguage()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        
+        // Change default language
+        quiz.Languages.First(l => l.IsDefault).IsDefault = false;
+        quiz.Languages.Add(new QuizLanguage { QuizId = quiz.Id, LanguageCode = "pt", IsDefault = true });
+        await db.SaveChangesAsync();
+        
+        var session = new QuizSession
+        {
+            QuizId = quiz.Id,
+            JoinCode = "TEST02",
+            Status = SessionStatus.Waiting
+        };
+        db.QuizSessions.Add(session);
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Act
+        var result = await service.GetLanguageInfoAsync(session.Id);
+
+        // Assert
+        result.DefaultLanguage.Should().Be("pt");
+    }
+
+    [Fact]
+    public async Task GetLanguageInfoAsync_ReturnsEnglishDefault_WhenSessionNotFound()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var service = new SessionService(db);
+
+        // Act
+        var result = await service.GetLanguageInfoAsync(Guid.NewGuid());
+
+        // Assert
+        result.AvailableLanguages.Should().ContainSingle("en");
+        result.DefaultLanguage.Should().Be("en");
+    }
+
+    #endregion
+
+    #region GetSessionStateAsync Language Tests
+
+    [Fact]
+    public async Task GetSessionStateAsync_IncludesLanguageInfo()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        
+        // Add Portuguese language
+        quiz.Languages.Add(new QuizLanguage { QuizId = quiz.Id, LanguageCode = "pt", IsDefault = false });
+        await db.SaveChangesAsync();
+        
+        var session = new QuizSession
+        {
+            QuizId = quiz.Id,
+            JoinCode = "LANG01",
+            Status = SessionStatus.Waiting
+        };
+        db.QuizSessions.Add(session);
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Act
+        var state = await service.GetSessionStateAsync(session.Id);
+
+        // Assert
+        state.Should().NotBeNull();
+        state!.AvailableLanguages.Should().HaveCount(2);
+        state.AvailableLanguages.Should().Contain("en");
+        state.AvailableLanguages.Should().Contain("pt");
+        state.DefaultLanguage.Should().Be("en");
+    }
+
+    [Fact]
+    public async Task GetSessionStateAsync_ActiveQuestion_IncludesTranslationsForAllLanguages()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        
+        // Add Portuguese language and translations
+        quiz.Languages.Add(new QuizLanguage { QuizId = quiz.Id, LanguageCode = "pt", IsDefault = false });
+        
+        var question = quiz.Questions.First();
+        question.Translations.Add(new QuestionTranslation 
+        { 
+            QuestionId = question.Id, 
+            LanguageCode = "pt", 
+            Text = "Pergunta em Português" 
+        });
+        
+        foreach (var answer in question.AnswerOptions)
+        {
+            answer.Translations.Add(new AnswerOptionTranslation
+            {
+                AnswerOptionId = answer.Id,
+                LanguageCode = "pt",
+                Text = $"Resposta PT {answer.OrderIndex}"
+            });
+        }
+        await db.SaveChangesAsync();
+        
+        var session = new QuizSession
+        {
+            QuizId = quiz.Id,
+            JoinCode = "TRANS1",
+            Status = SessionStatus.Active,
+            CurrentQuestionIndex = 0,
+            CurrentQuestionReleasedAtUtc = DateTime.UtcNow
+        };
+        db.QuizSessions.Add(session);
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Act
+        var state = await service.GetSessionStateAsync(session.Id);
+
+        // Assert
+        state.Should().NotBeNull();
+        state!.ActiveQuestion.Should().NotBeNull();
+        state.ActiveQuestion!.Translations.Should().HaveCount(2);
+        state.ActiveQuestion.Translations.Should().ContainKey("en");
+        state.ActiveQuestion.Translations.Should().ContainKey("pt");
+        state.ActiveQuestion.Translations["pt"].QuestionText.Should().Be("Pergunta em Português");
+        state.ActiveQuestion.Translations["pt"].AnswerTexts.Should().HaveCount(4);
+    }
+
+    #endregion
 }
