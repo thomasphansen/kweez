@@ -66,6 +66,26 @@ export const quizApi = {
   
   deleteQuestion: (questionId: string) =>
     fetchJson<void>(`/api/quizzes/questions/${questionId}`, { method: 'DELETE' }),
+
+  uploadQuestionImage: async (questionId: string, file: File): Promise<{ imageUrl: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${API_URL}/api/quizzes/questions/${questionId}/image`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(error || `HTTP ${response.status}`)
+    }
+
+    return response.json()
+  },
+
+  deleteQuestionImage: (questionId: string) =>
+    fetchJson<void>(`/api/quizzes/questions/${questionId}/image`, { method: 'DELETE' }),
 }
 
 // Session API

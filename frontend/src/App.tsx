@@ -17,11 +17,17 @@ import QuizEditor from './pages/admin/QuizEditor'
 import LiveControl from './pages/admin/LiveControl'
 import PrintQRCode from './pages/admin/PrintQRCode'
 
+// Display page (for projector)
+import DisplayPage from './pages/display/DisplayPage'
+
 function App() {
   return (
     <Routes>
       {/* Print route - no header/footer */}
       <Route path="/admin/quiz/:id/print" element={<PrintQRCode />} />
+
+      {/* Display route - no header/footer (for projector) */}
+      <Route path="/display/:sessionId" element={<DisplayPage />} />
 
       {/* All other routes with Layout */}
       <Route path="*" element={

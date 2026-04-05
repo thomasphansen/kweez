@@ -20,6 +20,7 @@ export interface QuizDetail {
 export interface Question {
   id: string
   text: string
+  imageUrl?: string
   orderIndex: number
   timeLimitSeconds: number
   answerOptions: AnswerOption[]
@@ -57,6 +58,7 @@ export interface SessionState {
 export interface ActiveQuestion {
   questionId: string
   text: string
+  imageUrl?: string
   questionIndex: number
   totalQuestions: number
   timeLimitSeconds: number
@@ -81,6 +83,7 @@ export interface JoinResponse {
 export interface QuestionReleased {
   questionId: string
   text: string
+  imageUrl?: string
   questionIndex: number
   totalQuestions: number
   timeLimitSeconds: number

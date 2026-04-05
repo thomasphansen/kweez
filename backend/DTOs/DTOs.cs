@@ -35,6 +35,7 @@ public record UpdateQuizRequest(
 public record QuestionDto(
     Guid Id,
     string Text,
+    string? ImageUrl,
     int OrderIndex,
     int TimeLimitSeconds,
     List<AnswerOptionDto> AnswerOptions
@@ -101,6 +102,7 @@ public record SessionStateDto(
 public record ActiveQuestionDto(
     Guid QuestionId,
     string Text,
+    string? ImageUrl,
     int QuestionIndex,
     int TotalQuestions,
     int TimeLimitSeconds,
@@ -130,6 +132,7 @@ public record JoinSessionResponse(
 public record QuestionReleasedDto(
     Guid QuestionId,
     string Text,
+    string? ImageUrl,
     int QuestionIndex,
     int TotalQuestions,
     int TimeLimitSeconds,

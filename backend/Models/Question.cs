@@ -5,6 +5,7 @@ public class Question
     public Guid Id { get; set; }
     public Guid QuizId { get; set; }
     public string Text { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public int OrderIndex { get; set; }
     public int TimeLimitSeconds { get; set; } = 15;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

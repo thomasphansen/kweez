@@ -206,6 +206,7 @@ public class SessionService : ISessionService
                     activeQuestion = new ActiveQuestionDto(
                         question.Id,
                         question.Text,
+                        question.ImageUrl,
                         session.CurrentQuestionIndex.Value,
                         questions.Count,
                         question.TimeLimitSeconds,

@@ -129,6 +129,7 @@ public class QuizHub : Hub<IQuizHubClient>
         var dto = new QuestionReleasedDto(
             question.Id,
             question.Text,
+            question.ImageUrl,
             session?.CurrentQuestionIndex ?? 0,
             session?.TotalQuestions ?? 0,
             question.TimeLimitSeconds,

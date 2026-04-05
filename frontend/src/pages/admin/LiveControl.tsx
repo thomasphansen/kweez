@@ -24,6 +24,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import SkipNextIcon from '@mui/icons-material/SkipNext'
 import StopIcon from '@mui/icons-material/Stop'
+import TvIcon from '@mui/icons-material/Tv'
 import { QRCodeSVG } from 'qrcode.react'
 import { sessionApi } from '../../services/api'
 import { quizHub } from '../../services/signalr'
@@ -241,6 +242,13 @@ export default function LiveControl() {
         <Typography variant="h4" sx={{ flex: 1 }}>
           {session.quizTitle}
         </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<TvIcon />}
+          onClick={() => window.open(`/display/${sessionId}`, '_blank')}
+        >
+          Open Display
+        </Button>
         <Chip
           label={isConnected ? 'Connected' : 'Disconnected'}
           color={isConnected ? 'success' : 'error'}

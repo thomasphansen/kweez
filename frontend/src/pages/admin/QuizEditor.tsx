@@ -24,12 +24,16 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import SaveIcon from '@mui/icons-material/Save'
 import QrCodeIcon from '@mui/icons-material/QrCode'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import ImageIcon from '@mui/icons-material/Image'
 import { quizApi } from '../../services/api'
 import type { Question } from '../../types'
+
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 interface QuestionForm {
   id?: string
   text: string
+  imageUrl?: string
   timeLimitSeconds: number
   answerOptions: {
     id?: string
@@ -82,6 +86,7 @@ export default function QuizEditor() {
         quiz.questions.map((q) => ({
           id: q.id,
           text: q.text,
+          imageUrl: q.imageUrl,
           timeLimitSeconds: q.timeLimitSeconds,
           answerOptions: q.answerOptions.map((a) => ({
             id: a.id,
@@ -182,6 +187,47 @@ export default function QuizEditor() {
       setExpandedQuestion(null)
     } catch (err) {
       setError('Failed to save question')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleImageUpload = async (index: number, file: File) => {
+    const question = questions[index]
+    if (!question.id) {
+      setError('Please save the question first before uploading an image')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    try {
+      const result = await quizApi.uploadQuestionImage(question.id, file)
+      const updated = [...questions]
+      updated[index] = { ...updated[index], imageUrl: result.imageUrl }
+      setQuestions(updated)
+    } catch (err) {
+      setError('Failed to upload image')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleImageDelete = async (index: number) => {
+    const question = questions[index]
+    if (!question.id) return
+
+    setSaving(true)
+    setError('')
+
+    try {
+      await quizApi.deleteQuestionImage(question.id)
+      const updated = [...questions]
+      updated[index] = { ...updated[index], imageUrl: undefined }
+      setQuestions(updated)
+    } catch (err) {
+      setError('Failed to delete image')
     } finally {
       setSaving(false)
     }
@@ -383,6 +429,59 @@ export default function QuizEditor() {
                       onChange={(e) => handleQuestionChange(qIndex, 'timeLimitSeconds', parseInt(e.target.value) || 15)}
                       sx={{ mb: 2, width: 200 }}
                     />
+
+                    {/* Image Upload */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                        Question Image (optional):
+                      </Typography>
+                      {question.imageUrl ? (
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                          <Box
+                            component="img"
+                            src={`${API_URL}${question.imageUrl}`}
+                            alt="Question image"
+                            sx={{
+                              maxWidth: 200,
+                              maxHeight: 150,
+                              objectFit: 'contain',
+                              borderRadius: 1,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                            }}
+                          />
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleImageDelete(qIndex)}
+                            disabled={saving}
+                          >
+                            Remove
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          component="label"
+                          startIcon={<ImageIcon />}
+                          disabled={saving || !question.id}
+                        >
+                          {question.id ? 'Upload Image' : 'Save question first'}
+                          <input
+                            type="file"
+                            hidden
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleImageUpload(qIndex, file)
+                              e.target.value = ''
+                            }}
+                          />
+                        </Button>
+                      )}
+                    </Box>
 
                     <Typography variant="subtitle1" sx={{ mb: 1 }}>
                       Answers (check the correct one):

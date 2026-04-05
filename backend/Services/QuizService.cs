@@ -16,6 +16,8 @@ public interface IQuizService
     Task<QuestionDto?> UpdateQuestionAsync(Guid questionId, UpdateQuestionRequest request);
     Task<bool> DeleteQuestionAsync(Guid questionId);
     Task<bool> ReorderQuestionsAsync(Guid quizId, List<Guid> questionIds);
+    Task<string?> SetQuestionImageAsync(Guid questionId, string imageUrl);
+    Task<bool> DeleteQuestionImageAsync(Guid questionId);
 }
 
 public class QuizService : IQuizService
@@ -59,6 +61,7 @@ public class QuizService : IQuizService
             quiz.Questions.Select(q => new QuestionDto(
                 q.Id,
                 q.Text,
+                q.ImageUrl,
                 q.OrderIndex,
                 q.TimeLimitSeconds,
                 q.AnswerOptions.Select(a => new AnswerOptionDto(
@@ -200,6 +203,7 @@ public class QuizService : IQuizService
         return new QuestionDto(
             question.Id,
             question.Text,
+            question.ImageUrl,
             question.OrderIndex,
             question.TimeLimitSeconds,
             question.AnswerOptions.Select(a => new AnswerOptionDto(
@@ -255,6 +259,7 @@ public class QuizService : IQuizService
         return new QuestionDto(
             question.Id,
             question.Text,
+            question.ImageUrl,
             question.OrderIndex,
             question.TimeLimitSeconds,
             newAnswers.Select(a => new AnswerOptionDto(
@@ -288,6 +293,26 @@ public class QuizService : IQuizService
             question.OrderIndex = i;
         }
 
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<string?> SetQuestionImageAsync(Guid questionId, string imageUrl)
+    {
+        var question = await _db.Questions.FindAsync(questionId);
+        if (question == null) return null;
+
+        question.ImageUrl = imageUrl;
+        await _db.SaveChangesAsync();
+        return imageUrl;
+    }
+
+    public async Task<bool> DeleteQuestionImageAsync(Guid questionId)
+    {
+        var question = await _db.Questions.FindAsync(questionId);
+        if (question == null) return false;
+
+        question.ImageUrl = null;
         await _db.SaveChangesAsync();
         return true;
     }

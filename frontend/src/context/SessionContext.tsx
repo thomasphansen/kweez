@@ -54,8 +54,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
   
-  // Track if this is a player (not admin) - admin routes start with /admin
-  const isPlayerRoute = !location.pathname.startsWith('/admin')
+  // Track if this is a player (not admin/display) - admin routes start with /admin, display routes with /display
+  const isPlayerRoute = !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/display')
   const isPlayerRouteRef = useRef(isPlayerRoute)
   isPlayerRouteRef.current = isPlayerRoute
   
