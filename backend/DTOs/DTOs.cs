@@ -7,7 +7,8 @@ public record QuizDto(
     string? Description,
     int QuestionCount,
     DateTime CreatedAtUtc,
-    string? FixedJoinCode = null
+    string? FixedJoinCode = null,
+    List<QuizLanguageDto>? Languages = null
 );
 
 public record QuizDetailDto(
@@ -16,19 +17,36 @@ public record QuizDetailDto(
     string? Description,
     DateTime CreatedAtUtc,
     List<QuestionDto> Questions,
-    string? FixedJoinCode = null
+    string? FixedJoinCode = null,
+    List<QuizLanguageDto>? Languages = null
 );
 
 public record CreateQuizRequest(
     string Title,
     string? Description,
-    bool UseFixedJoinCode = false
+    bool UseFixedJoinCode = false,
+    string DefaultLanguage = "en"
 );
 
 public record UpdateQuizRequest(
     string Title,
     string? Description,
     bool? UseFixedJoinCode = null
+);
+
+// Quiz Language DTOs
+public record QuizLanguageDto(
+    Guid Id,
+    string LanguageCode,
+    bool IsDefault
+);
+
+public record AddQuizLanguageRequest(
+    string LanguageCode
+);
+
+public record SetDefaultLanguageRequest(
+    string LanguageCode
 );
 
 // Question DTOs

@@ -145,4 +145,37 @@ public class QuizzesController : ControllerBase
         if (!deleted) return NotFound();
         return NoContent();
     }
+
+    // Language management endpoints
+
+    [HttpGet("{quizId:guid}/languages")]
+    public async Task<ActionResult<List<QuizLanguageDto>>> GetLanguages(Guid quizId)
+    {
+        var languages = await _quizService.GetQuizLanguagesAsync(quizId);
+        return Ok(languages);
+    }
+
+    [HttpPost("{quizId:guid}/languages")]
+    public async Task<ActionResult<QuizLanguageDto>> AddLanguage(Guid quizId, AddQuizLanguageRequest request)
+    {
+        var language = await _quizService.AddQuizLanguageAsync(quizId, request.LanguageCode);
+        if (language == null) return BadRequest("Could not add language. Quiz not found or language already exists.");
+        return CreatedAtAction(nameof(GetLanguages), new { quizId }, language);
+    }
+
+    [HttpPut("{quizId:guid}/languages/default")]
+    public async Task<ActionResult> SetDefaultLanguage(Guid quizId, SetDefaultLanguageRequest request)
+    {
+        var success = await _quizService.SetDefaultLanguageAsync(quizId, request.LanguageCode);
+        if (!success) return BadRequest("Could not set default language. Quiz or language not found.");
+        return NoContent();
+    }
+
+    [HttpDelete("{quizId:guid}/languages/{languageCode}")]
+    public async Task<ActionResult> DeleteLanguage(Guid quizId, string languageCode)
+    {
+        var deleted = await _quizService.DeleteQuizLanguageAsync(quizId, languageCode);
+        if (!deleted) return BadRequest("Could not delete language. Language not found or is the default language.");
+        return NoContent();
+    }
 }

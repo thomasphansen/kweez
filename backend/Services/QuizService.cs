@@ -18,6 +18,12 @@ public interface IQuizService
     Task<bool> ReorderQuestionsAsync(Guid quizId, List<Guid> questionIds);
     Task<string?> SetQuestionImageAsync(Guid questionId, string imageUrl);
     Task<bool> DeleteQuestionImageAsync(Guid questionId);
+    
+    // Language management
+    Task<List<QuizLanguageDto>> GetQuizLanguagesAsync(Guid quizId);
+    Task<QuizLanguageDto?> AddQuizLanguageAsync(Guid quizId, string languageCode);
+    Task<bool> SetDefaultLanguageAsync(Guid quizId, string languageCode);
+    Task<bool> DeleteQuizLanguageAsync(Guid quizId, string languageCode);
 }
 
 public class QuizService : IQuizService
@@ -32,6 +38,7 @@ public class QuizService : IQuizService
     public async Task<List<QuizDto>> GetAllQuizzesAsync()
     {
         return await _db.Quizzes
+            .Include(q => q.Languages)
             .OrderByDescending(q => q.CreatedAtUtc)
             .Select(q => new QuizDto(
                 q.Id,
@@ -39,7 +46,8 @@ public class QuizService : IQuizService
                 q.Description,
                 q.Questions.Count,
                 q.CreatedAtUtc,
-                q.FixedJoinCode
+                q.FixedJoinCode,
+                q.Languages.Select(l => new QuizLanguageDto(l.Id, l.LanguageCode, l.IsDefault)).ToList()
             ))
             .ToListAsync();
     }
@@ -48,10 +56,17 @@ public class QuizService : IQuizService
     {
         var quiz = await _db.Quizzes
             .Include(q => q.Questions.OrderBy(qu => qu.OrderIndex))
-            .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                .ThenInclude(q => q.Translations)
+            .Include(q => q.Questions)
+                .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                    .ThenInclude(a => a.Translations)
+            .Include(q => q.Languages)
             .FirstOrDefaultAsync(q => q.Id == id);
 
         if (quiz == null) return null;
+
+        // Get default language code
+        var defaultLanguage = quiz.Languages.FirstOrDefault(l => l.IsDefault)?.LanguageCode ?? "en";
 
         return new QuizDetailDto(
             quiz.Id,
@@ -60,18 +75,19 @@ public class QuizService : IQuizService
             quiz.CreatedAtUtc,
             quiz.Questions.Select(q => new QuestionDto(
                 q.Id,
-                q.Text,
+                q.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "",
                 q.ImageUrl,
                 q.OrderIndex,
                 q.TimeLimitSeconds,
                 q.AnswerOptions.Select(a => new AnswerOptionDto(
                     a.Id,
-                    a.Text,
+                    a.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "",
                     a.OrderIndex,
                     a.IsCorrect
                 )).ToList()
             )).ToList(),
-            quiz.FixedJoinCode
+            quiz.FixedJoinCode,
+            quiz.Languages.Select(l => new QuizLanguageDto(l.Id, l.LanguageCode, l.IsDefault)).ToList()
         );
     }
 
@@ -102,19 +118,38 @@ public class QuizService : IQuizService
             Title = request.Title,
             Description = request.Description,
             FixedJoinCode = fixedJoinCode,
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = DateTime.UtcNow,
+            Languages = new List<QuizLanguage>
+            {
+                new QuizLanguage
+                {
+                    Id = Guid.NewGuid(),
+                    LanguageCode = request.DefaultLanguage,
+                    IsDefault = true,
+                    CreatedAtUtc = DateTime.UtcNow
+                }
+            }
         };
 
         _db.Quizzes.Add(quiz);
         await _db.SaveChangesAsync();
 
-        return new QuizDto(quiz.Id, quiz.Title, quiz.Description, 0, quiz.CreatedAtUtc, quiz.FixedJoinCode);
+        return new QuizDto(
+            quiz.Id, 
+            quiz.Title, 
+            quiz.Description, 
+            0, 
+            quiz.CreatedAtUtc, 
+            quiz.FixedJoinCode,
+            quiz.Languages.Select(l => new QuizLanguageDto(l.Id, l.LanguageCode, l.IsDefault)).ToList()
+        );
     }
 
     public async Task<QuizDto?> UpdateQuizAsync(Guid id, UpdateQuizRequest request)
     {
         var quiz = await _db.Quizzes
             .Include(q => q.Questions)
+            .Include(q => q.Languages)
             .FirstOrDefaultAsync(q => q.Id == id);
 
         if (quiz == null) return null;
@@ -146,7 +181,15 @@ public class QuizService : IQuizService
 
         await _db.SaveChangesAsync();
 
-        return new QuizDto(quiz.Id, quiz.Title, quiz.Description, quiz.Questions.Count, quiz.CreatedAtUtc, quiz.FixedJoinCode);
+        return new QuizDto(
+            quiz.Id, 
+            quiz.Title, 
+            quiz.Description, 
+            quiz.Questions.Count, 
+            quiz.CreatedAtUtc, 
+            quiz.FixedJoinCode,
+            quiz.Languages.Select(l => new QuizLanguageDto(l.Id, l.LanguageCode, l.IsDefault)).ToList()
+        );
     }
 
     public async Task<bool> DeleteQuizAsync(Guid id)
@@ -176,24 +219,53 @@ public class QuizService : IQuizService
 
     public async Task<QuestionDto> AddQuestionAsync(Guid quizId, CreateQuestionRequest request)
     {
+        // Get the default language for this quiz
+        var defaultLanguage = await _db.QuizLanguages
+            .Where(l => l.QuizId == quizId && l.IsDefault)
+            .Select(l => l.LanguageCode)
+            .FirstOrDefaultAsync() ?? "en";
+
         var maxOrder = await _db.Questions
             .Where(q => q.QuizId == quizId)
             .MaxAsync(q => (int?)q.OrderIndex) ?? -1;
 
+        var questionId = Guid.NewGuid();
         var question = new Question
         {
-            Id = Guid.NewGuid(),
+            Id = questionId,
             QuizId = quizId,
-            Text = request.Text,
             TimeLimitSeconds = request.TimeLimitSeconds,
             OrderIndex = maxOrder + 1,
             CreatedAtUtc = DateTime.UtcNow,
-            AnswerOptions = request.AnswerOptions.Select((a, i) => new AnswerOption
+            Translations = new List<QuestionTranslation>
             {
-                Id = Guid.NewGuid(),
-                Text = a.Text,
-                IsCorrect = a.IsCorrect,
-                OrderIndex = i
+                new QuestionTranslation
+                {
+                    Id = Guid.NewGuid(),
+                    QuestionId = questionId,
+                    LanguageCode = defaultLanguage,
+                    Text = request.Text
+                }
+            },
+            AnswerOptions = request.AnswerOptions.Select((a, i) => 
+            {
+                var answerId = Guid.NewGuid();
+                return new AnswerOption
+                {
+                    Id = answerId,
+                    IsCorrect = a.IsCorrect,
+                    OrderIndex = i,
+                    Translations = new List<AnswerOptionTranslation>
+                    {
+                        new AnswerOptionTranslation
+                        {
+                            Id = Guid.NewGuid(),
+                            AnswerOptionId = answerId,
+                            LanguageCode = defaultLanguage,
+                            Text = a.Text
+                        }
+                    }
+                };
             }).ToList()
         };
 
@@ -202,12 +274,12 @@ public class QuizService : IQuizService
 
         return new QuestionDto(
             question.Id,
-            question.Text,
+            request.Text,
             question.ImageUrl,
             question.OrderIndex,
             question.TimeLimitSeconds,
-            question.AnswerOptions.Select(a => new AnswerOptionDto(
-                a.Id, a.Text, a.OrderIndex, a.IsCorrect
+            question.AnswerOptions.Select((a, i) => new AnswerOptionDto(
+                a.Id, request.AnswerOptions[i].Text, a.OrderIndex, a.IsCorrect
             )).ToList()
         );
     }
@@ -216,14 +288,29 @@ public class QuizService : IQuizService
     {
         var question = await _db.Questions
             .Include(q => q.AnswerOptions)
+                .ThenInclude(a => a.Translations)
+            .Include(q => q.Translations)
             .FirstOrDefaultAsync(q => q.Id == questionId);
 
         if (question == null) return null;
 
+        // Get the quiz's default language
+        var defaultLanguage = await _db.QuizLanguages
+            .Where(l => l.QuizId == question.QuizId && l.IsDefault)
+            .Select(l => l.LanguageCode)
+            .FirstOrDefaultAsync() ?? "en";
+
         // Store the order index before any modifications
         var orderIndex = question.OrderIndex;
 
-        // Remove old answers first
+        // Remove old answer translations first (before removing answers)
+        foreach (var answer in question.AnswerOptions)
+        {
+            _db.AnswerOptionTranslations.RemoveRange(answer.Translations);
+        }
+        await _db.SaveChangesAsync();
+
+        // Remove old answers
         var oldAnswerIds = question.AnswerOptions.Select(a => a.Id).ToList();
         foreach (var answerId in oldAnswerIds)
         {
@@ -236,21 +323,50 @@ public class QuizService : IQuizService
         await _db.SaveChangesAsync();
         
         // Reload question to get fresh state
-        question = await _db.Questions.FindAsync(questionId);
+        question = await _db.Questions
+            .Include(q => q.Translations)
+            .FirstOrDefaultAsync(q => q.Id == questionId);
         if (question == null) return null;
         
-        // Update question properties
-        question.Text = request.Text;
+        // Update question text translation
         question.TimeLimitSeconds = request.TimeLimitSeconds;
-        
-        // Add new answers
-        var newAnswers = request.AnswerOptions.Select((a, i) => new AnswerOption
+        var questionTranslation = question.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage);
+        if (questionTranslation != null)
         {
-            Id = a.Id ?? Guid.NewGuid(),
-            QuestionId = questionId,
-            Text = a.Text,
-            IsCorrect = a.IsCorrect,
-            OrderIndex = i
+            questionTranslation.Text = request.Text;
+        }
+        else
+        {
+            question.Translations.Add(new QuestionTranslation
+            {
+                Id = Guid.NewGuid(),
+                QuestionId = questionId,
+                LanguageCode = defaultLanguage,
+                Text = request.Text
+            });
+        }
+        
+        // Add new answers with translations
+        var newAnswers = request.AnswerOptions.Select((a, i) => 
+        {
+            var answerId = a.Id ?? Guid.NewGuid();
+            return new AnswerOption
+            {
+                Id = answerId,
+                QuestionId = questionId,
+                IsCorrect = a.IsCorrect,
+                OrderIndex = i,
+                Translations = new List<AnswerOptionTranslation>
+                {
+                    new AnswerOptionTranslation
+                    {
+                        Id = Guid.NewGuid(),
+                        AnswerOptionId = answerId,
+                        LanguageCode = defaultLanguage,
+                        Text = a.Text
+                    }
+                }
+            };
         }).ToList();
         
         _db.AnswerOptions.AddRange(newAnswers);
@@ -258,12 +374,15 @@ public class QuizService : IQuizService
 
         return new QuestionDto(
             question.Id,
-            question.Text,
+            request.Text,
             question.ImageUrl,
             question.OrderIndex,
             question.TimeLimitSeconds,
             newAnswers.Select(a => new AnswerOptionDto(
-                a.Id, a.Text, a.OrderIndex, a.IsCorrect
+                a.Id, 
+                a.Translations.First().Text, 
+                a.OrderIndex, 
+                a.IsCorrect
             )).ToList()
         );
     }
@@ -313,6 +432,79 @@ public class QuizService : IQuizService
         if (question == null) return false;
 
         question.ImageUrl = null;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    // Language management methods
+
+    public async Task<List<QuizLanguageDto>> GetQuizLanguagesAsync(Guid quizId)
+    {
+        return await _db.QuizLanguages
+            .Where(l => l.QuizId == quizId)
+            .OrderByDescending(l => l.IsDefault)
+            .ThenBy(l => l.LanguageCode)
+            .Select(l => new QuizLanguageDto(l.Id, l.LanguageCode, l.IsDefault))
+            .ToListAsync();
+    }
+
+    public async Task<QuizLanguageDto?> AddQuizLanguageAsync(Guid quizId, string languageCode)
+    {
+        // Check if quiz exists
+        var quizExists = await _db.Quizzes.AnyAsync(q => q.Id == quizId);
+        if (!quizExists) return null;
+
+        // Check if language already exists for this quiz
+        var exists = await _db.QuizLanguages.AnyAsync(l => l.QuizId == quizId && l.LanguageCode == languageCode);
+        if (exists) return null;
+
+        var language = new QuizLanguage
+        {
+            Id = Guid.NewGuid(),
+            QuizId = quizId,
+            LanguageCode = languageCode,
+            IsDefault = false,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        _db.QuizLanguages.Add(language);
+        await _db.SaveChangesAsync();
+
+        return new QuizLanguageDto(language.Id, language.LanguageCode, language.IsDefault);
+    }
+
+    public async Task<bool> SetDefaultLanguageAsync(Guid quizId, string languageCode)
+    {
+        var languages = await _db.QuizLanguages
+            .Where(l => l.QuizId == quizId)
+            .ToListAsync();
+
+        if (languages.Count == 0) return false;
+
+        var targetLanguage = languages.FirstOrDefault(l => l.LanguageCode == languageCode);
+        if (targetLanguage == null) return false;
+
+        // Unset current default and set new default
+        foreach (var lang in languages)
+        {
+            lang.IsDefault = lang.LanguageCode == languageCode;
+        }
+
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteQuizLanguageAsync(Guid quizId, string languageCode)
+    {
+        var language = await _db.QuizLanguages
+            .FirstOrDefaultAsync(l => l.QuizId == quizId && l.LanguageCode == languageCode);
+
+        if (language == null) return false;
+
+        // Cannot delete the default language
+        if (language.IsDefault) return false;
+
+        _db.QuizLanguages.Remove(language);
         await _db.SaveChangesAsync();
         return true;
     }

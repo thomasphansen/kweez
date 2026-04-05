@@ -125,15 +125,22 @@ public class QuizHub : Hub<IQuizHubClient>
         _questionReleaseTimes[sessionId] = releaseTime;
 
         var session = await _sessionService.GetSessionAsync(sessionId);
+        var defaultLanguage = await _sessionService.GetDefaultLanguageAsync(sessionId);
+        
+        var questionText = question.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "";
         
         var dto = new QuestionReleasedDto(
             question.Id,
-            question.Text,
+            questionText,
             question.ImageUrl,
             session?.CurrentQuestionIndex ?? 0,
             session?.TotalQuestions ?? 0,
             question.TimeLimitSeconds,
-            question.AnswerOptions.Select((a, i) => new AnswerChoiceDto(a.Id, a.Text, i)).ToList()
+            question.AnswerOptions.Select((a, i) => new AnswerChoiceDto(
+                a.Id, 
+                a.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "", 
+                i
+            )).ToList()
         );
 
         await Clients.Group(sessionId.ToString()).QuestionReleased(dto);

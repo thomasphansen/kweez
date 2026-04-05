@@ -12,7 +12,8 @@
     "delete": "Excluir",
     "goBack": "Voltar",
     "connected": "Conectado",
-    "disconnected": "Desconectado"
+    "disconnected": "Desconectado",
+    "add": "Adicionar"
   },
   "join": {
     "title": "kweez",
@@ -75,7 +76,8 @@
     "fixedCode": "Código fixo: {{code}}",
     "startSession": "Iniciar Sessão",
     "printQrCodes": "Imprimir QR Codes",
-    "edit": "Editar"
+    "edit": "Editar",
+    "quizLanguage": "Idioma do Quiz"
   },
   "quizEditor": {
     "newQuiz": "Novo Quiz",
@@ -107,7 +109,17 @@
     "questionTextRequired": "Texto da pergunta é obrigatório",
     "atLeastOneAnswer": "Pelo menos uma resposta é obrigatória",
     "markOneCorrect": "Marque uma resposta como correta",
-    "saveQuestionBeforeImage": "Por favor, salve a pergunta antes de enviar uma imagem"
+    "saveQuestionBeforeImage": "Por favor, salve a pergunta antes de enviar uma imagem",
+    "languages": "Idiomas",
+    "languagesDescription": "Gerencie os idiomas disponíveis para este quiz. Clique em um idioma para torná-lo padrão. O idioma padrão não pode ser excluído.",
+    "addLanguage": "Adicionar Idioma",
+    "defaultLanguage": "Idioma padrão",
+    "clickToSetDefault": "Clique para definir como padrão",
+    "languageAlreadyExists": "Este idioma já foi adicionado",
+    "failedToAddLanguage": "Falha ao adicionar idioma",
+    "failedToSetDefaultLanguage": "Falha ao definir idioma padrão",
+    "failedToDeleteLanguage": "Falha ao excluir idioma",
+    "cannotDeleteDefaultLanguage": "Não é possível excluir o idioma padrão"
   },
   "print": {
     "haveFun": "Divirta-se!",

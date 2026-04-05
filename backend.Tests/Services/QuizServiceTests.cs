@@ -413,12 +413,7 @@ public class QuizServiceTests
     {
         // Arrange
         using var db = TestDbContextFactory.Create();
-        var quiz = new Quiz
-        {
-            Id = Guid.NewGuid(),
-            Title = "Test Quiz",
-            CreatedAtUtc = DateTime.UtcNow
-        };
+        var quiz = TestDbContextFactory.CreateQuizWithLanguage("Test Quiz");
         db.Quizzes.Add(quiz);
         await db.SaveChangesAsync();
 
@@ -450,12 +445,7 @@ public class QuizServiceTests
     {
         // Arrange
         using var db = TestDbContextFactory.Create();
-        var quiz = new Quiz
-        {
-            Id = Guid.NewGuid(),
-            Title = "Test Quiz",
-            CreatedAtUtc = DateTime.UtcNow
-        };
+        var quiz = TestDbContextFactory.CreateQuizWithLanguage("Test Quiz");
         db.Quizzes.Add(quiz);
         await db.SaveChangesAsync();
 
@@ -506,12 +496,7 @@ public class QuizServiceTests
     {
         // Arrange
         using var db = TestDbContextFactory.Create();
-        var quiz = new Quiz
-        {
-            Id = Guid.NewGuid(),
-            Title = "Test Quiz",
-            CreatedAtUtc = DateTime.UtcNow
-        };
+        var quiz = TestDbContextFactory.CreateQuizWithLanguage("Test Quiz");
         db.Quizzes.Add(quiz);
         await db.SaveChangesAsync();
 

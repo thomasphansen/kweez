@@ -19,39 +19,81 @@ public static class TestDbContextFactory
 
     public static async Task<(Quiz quiz, QuizSession session, Participant participant)> SeedBasicSessionAsync(KweezDbContext db)
     {
+        var quizId = Guid.NewGuid();
         var quiz = new Quiz
         {
-            Id = Guid.NewGuid(),
+            Id = quizId,
             Title = "Test Quiz",
             Description = "A test quiz",
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = DateTime.UtcNow,
+            Languages = new List<QuizLanguage>
+            {
+                new QuizLanguage
+                {
+                    Id = Guid.NewGuid(),
+                    QuizId = quizId,
+                    LanguageCode = "en",
+                    IsDefault = true,
+                    CreatedAtUtc = DateTime.UtcNow
+                }
+            }
         };
 
+        var questionId = Guid.NewGuid();
         var question = new Question
         {
-            Id = Guid.NewGuid(),
+            Id = questionId,
             QuizId = quiz.Id,
-            Text = "What is 2 + 2?",
             OrderIndex = 0,
-            TimeLimitSeconds = 15
+            TimeLimitSeconds = 15,
+            Translations = new List<QuestionTranslation>
+            {
+                new QuestionTranslation
+                {
+                    Id = Guid.NewGuid(),
+                    QuestionId = questionId,
+                    LanguageCode = "en",
+                    Text = "What is 2 + 2?"
+                }
+            }
         };
 
+        var correctAnswerId = Guid.NewGuid();
         var correctAnswer = new AnswerOption
         {
-            Id = Guid.NewGuid(),
+            Id = correctAnswerId,
             QuestionId = question.Id,
-            Text = "4",
             OrderIndex = 0,
-            IsCorrect = true
+            IsCorrect = true,
+            Translations = new List<AnswerOptionTranslation>
+            {
+                new AnswerOptionTranslation
+                {
+                    Id = Guid.NewGuid(),
+                    AnswerOptionId = correctAnswerId,
+                    LanguageCode = "en",
+                    Text = "4"
+                }
+            }
         };
 
+        var wrongAnswerId = Guid.NewGuid();
         var wrongAnswer = new AnswerOption
         {
-            Id = Guid.NewGuid(),
+            Id = wrongAnswerId,
             QuestionId = question.Id,
-            Text = "5",
             OrderIndex = 1,
-            IsCorrect = false
+            IsCorrect = false,
+            Translations = new List<AnswerOptionTranslation>
+            {
+                new AnswerOptionTranslation
+                {
+                    Id = Guid.NewGuid(),
+                    AnswerOptionId = wrongAnswerId,
+                    LanguageCode = "en",
+                    Text = "5"
+                }
+            }
         };
 
         question.AnswerOptions = new List<AnswerOption> { correctAnswer, wrongAnswer };
@@ -92,31 +134,47 @@ public static class TestDbContextFactory
 
     public static async Task<Quiz> SeedQuizWithMultipleQuestionsAsync(KweezDbContext db, int questionCount = 3)
     {
+        var quizId = Guid.NewGuid();
         var quiz = new Quiz
         {
-            Id = Guid.NewGuid(),
+            Id = quizId,
             Title = "Multi-Question Quiz",
             Description = "A quiz with multiple questions",
             CreatedAtUtc = DateTime.UtcNow,
-            Questions = new List<Question>()
+            Questions = new List<Question>(),
+            Languages = new List<QuizLanguage>
+            {
+                new QuizLanguage
+                {
+                    Id = Guid.NewGuid(),
+                    QuizId = quizId,
+                    LanguageCode = "en",
+                    IsDefault = true,
+                    CreatedAtUtc = DateTime.UtcNow
+                }
+            }
         };
 
         for (int i = 0; i < questionCount; i++)
         {
+            var questionId = Guid.NewGuid();
             var question = new Question
             {
-                Id = Guid.NewGuid(),
+                Id = questionId,
                 QuizId = quiz.Id,
-                Text = $"Question {i + 1}?",
                 OrderIndex = i,
                 TimeLimitSeconds = 15,
-                AnswerOptions = new List<AnswerOption>
+                Translations = new List<QuestionTranslation>
                 {
-                    new() { Id = Guid.NewGuid(), Text = "Correct", OrderIndex = 0, IsCorrect = true },
-                    new() { Id = Guid.NewGuid(), Text = "Wrong 1", OrderIndex = 1, IsCorrect = false },
-                    new() { Id = Guid.NewGuid(), Text = "Wrong 2", OrderIndex = 2, IsCorrect = false },
-                    new() { Id = Guid.NewGuid(), Text = "Wrong 3", OrderIndex = 3, IsCorrect = false }
-                }
+                    new QuestionTranslation
+                    {
+                        Id = Guid.NewGuid(),
+                        QuestionId = questionId,
+                        LanguageCode = "en",
+                        Text = $"Question {i + 1}?"
+                    }
+                },
+                AnswerOptions = CreateAnswerOptions(questionId, "en")
             };
             quiz.Questions.Add(question);
         }
@@ -125,5 +183,64 @@ public static class TestDbContextFactory
         await db.SaveChangesAsync();
 
         return quiz;
+    }
+
+    private static List<AnswerOption> CreateAnswerOptions(Guid questionId, string languageCode)
+    {
+        var answers = new List<(string text, bool isCorrect)>
+        {
+            ("Correct", true),
+            ("Wrong 1", false),
+            ("Wrong 2", false),
+            ("Wrong 3", false)
+        };
+
+        return answers.Select((a, i) =>
+        {
+            var answerId = Guid.NewGuid();
+            return new AnswerOption
+            {
+                Id = answerId,
+                QuestionId = questionId,
+                OrderIndex = i,
+                IsCorrect = a.isCorrect,
+                Translations = new List<AnswerOptionTranslation>
+                {
+                    new AnswerOptionTranslation
+                    {
+                        Id = Guid.NewGuid(),
+                        AnswerOptionId = answerId,
+                        LanguageCode = languageCode,
+                        Text = a.text
+                    }
+                }
+            };
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Creates a Quiz with a default language configured
+    /// </summary>
+    public static Quiz CreateQuizWithLanguage(string title = "Test Quiz", string? description = null, string languageCode = "en")
+    {
+        var quizId = Guid.NewGuid();
+        return new Quiz
+        {
+            Id = quizId,
+            Title = title,
+            Description = description,
+            CreatedAtUtc = DateTime.UtcNow,
+            Languages = new List<QuizLanguage>
+            {
+                new QuizLanguage
+                {
+                    Id = Guid.NewGuid(),
+                    QuizId = quizId,
+                    LanguageCode = languageCode,
+                    IsDefault = true,
+                    CreatedAtUtc = DateTime.UtcNow
+                }
+            }
+        };
     }
 }

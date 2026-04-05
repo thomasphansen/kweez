@@ -248,7 +248,7 @@ public class SessionServiceTests
 
         // Assert
         question.Should().NotBeNull();
-        question!.Text.Should().Be("Question 1?");
+        question!.Translations.Should().Contain(t => t.Text == "Question 1?");
         question.AnswerOptions.Should().HaveCount(4);
 
         var session = await db.QuizSessions.FindAsync(sessionDto.Id);
@@ -268,13 +268,13 @@ public class SessionServiceTests
 
         // Act & Assert - Release all questions
         var q1 = await service.ReleaseNextQuestionAsync(sessionDto.Id);
-        q1!.Text.Should().Be("Question 1?");
+        q1!.Translations.Should().Contain(t => t.Text == "Question 1?");
 
         var q2 = await service.ReleaseNextQuestionAsync(sessionDto.Id);
-        q2!.Text.Should().Be("Question 2?");
+        q2!.Translations.Should().Contain(t => t.Text == "Question 2?");
 
         var q3 = await service.ReleaseNextQuestionAsync(sessionDto.Id);
-        q3!.Text.Should().Be("Question 3?");
+        q3!.Translations.Should().Contain(t => t.Text == "Question 3?");
 
         var q4 = await service.ReleaseNextQuestionAsync(sessionDto.Id);
         q4.Should().BeNull(); // No more questions

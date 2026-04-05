@@ -23,6 +23,7 @@ public interface ISessionService
     Task<List<ParticipantDto>> GetParticipantsAsync(Guid sessionId);
     Task<List<LeaderboardEntryDto>> GetLeaderboardAsync(Guid sessionId, Guid? lastQuestionId = null);
     Task<bool> HaveAllParticipantsAnsweredAsync(Guid sessionId, Guid questionId);
+    Task<string> GetDefaultLanguageAsync(Guid sessionId);
 }
 
 public class SessionService : ISessionService
@@ -180,12 +181,21 @@ public class SessionService : ISessionService
     {
         var session = await _db.QuizSessions
             .Include(s => s.Quiz)
-            .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
-            .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                .ThenInclude(q => q.Languages)
+            .Include(s => s.Quiz)
+                .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
+                    .ThenInclude(q => q.Translations)
+            .Include(s => s.Quiz)
+                .ThenInclude(q => q.Questions)
+                    .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                        .ThenInclude(a => a.Translations)
             .Include(s => s.Participants)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
         if (session == null) return null;
+
+        // Get default language for this quiz
+        var defaultLanguage = session.Quiz.Languages.FirstOrDefault(l => l.IsDefault)?.LanguageCode ?? "en";
 
         // Build active question info if there's a question in progress
         ActiveQuestionDto? activeQuestion = null;
@@ -203,15 +213,20 @@ public class SessionService : ISessionService
                 // Only include if there's still time left
                 if (remaining > 0)
                 {
+                    var questionText = question.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "";
                     activeQuestion = new ActiveQuestionDto(
                         question.Id,
-                        question.Text,
+                        questionText,
                         question.ImageUrl,
                         session.CurrentQuestionIndex.Value,
                         questions.Count,
                         question.TimeLimitSeconds,
                         remaining,
-                        question.AnswerOptions.Select((a, i) => new AnswerChoiceDto(a.Id, a.Text, i)).ToList()
+                        question.AnswerOptions.Select((a, i) => new AnswerChoiceDto(
+                            a.Id, 
+                            a.Translations.FirstOrDefault(t => t.LanguageCode == defaultLanguage)?.Text ?? "", 
+                            i
+                        )).ToList()
                     );
                 }
             }
@@ -303,8 +318,12 @@ public class SessionService : ISessionService
     {
         var session = await _db.QuizSessions
             .Include(s => s.Quiz)
-            .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
-            .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
+                    .ThenInclude(q => q.Translations)
+            .Include(s => s.Quiz)
+                .ThenInclude(q => q.Questions)
+                    .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                        .ThenInclude(a => a.Translations)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
         if (session == null || session.Status != SessionStatus.Active)
@@ -328,8 +347,12 @@ public class SessionService : ISessionService
     {
         var session = await _db.QuizSessions
             .Include(s => s.Quiz)
-            .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
-            .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
+                    .ThenInclude(q => q.Translations)
+            .Include(s => s.Quiz)
+                .ThenInclude(q => q.Questions)
+                    .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.OrderIndex))
+                        .ThenInclude(a => a.Translations)
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
         if (session?.CurrentQuestionIndex == null || session.CurrentQuestionIndex < 0)
@@ -409,5 +432,18 @@ public class SessionService : ISessionService
                             a.Participant.SessionId == sessionId);
 
         return answerCount >= participantCount;
+    }
+
+    public async Task<string> GetDefaultLanguageAsync(Guid sessionId)
+    {
+        var session = await _db.QuizSessions
+            .Include(s => s.Quiz)
+                .ThenInclude(q => q.Languages)
+            .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+        if (session == null)
+            return "en";
+
+        return session.Quiz.Languages.FirstOrDefault(l => l.IsDefault)?.LanguageCode ?? "en";
     }
 }

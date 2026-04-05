@@ -16,4 +16,5 @@ public class Quiz
     
     public ICollection<Question> Questions { get; set; } = new List<Question>();
     public ICollection<QuizSession> Sessions { get; set; } = new List<QuizSession>();
+    public ICollection<QuizLanguage> Languages { get; set; } = new List<QuizLanguage>();
 }

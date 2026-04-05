@@ -12,7 +12,8 @@
     "delete": "Delete",
     "goBack": "Go Back",
     "connected": "Connected",
-    "disconnected": "Disconnected"
+    "disconnected": "Disconnected",
+    "add": "Add"
   },
   "join": {
     "title": "kweez",
@@ -75,7 +76,8 @@
     "fixedCode": "Fixed code: {{code}}",
     "startSession": "Start Session",
     "printQrCodes": "Print QR Codes",
-    "edit": "Edit"
+    "edit": "Edit",
+    "quizLanguage": "Quiz Language"
   },
   "quizEditor": {
     "newQuiz": "New Quiz",
@@ -107,7 +109,17 @@
     "questionTextRequired": "Question text is required",
     "atLeastOneAnswer": "At least one answer is required",
     "markOneCorrect": "Mark one answer as correct",
-    "saveQuestionBeforeImage": "Please save the question first before uploading an image"
+    "saveQuestionBeforeImage": "Please save the question first before uploading an image",
+    "languages": "Languages",
+    "languagesDescription": "Manage the languages available for this quiz. Click a language to make it the default. The default language cannot be deleted.",
+    "addLanguage": "Add Language",
+    "defaultLanguage": "Default language",
+    "clickToSetDefault": "Click to set as default",
+    "languageAlreadyExists": "This language is already added",
+    "failedToAddLanguage": "Failed to add language",
+    "failedToSetDefaultLanguage": "Failed to set default language",
+    "failedToDeleteLanguage": "Failed to delete language",
+    "cannotDeleteDefaultLanguage": "Cannot delete the default language"
   },
   "print": {
     "haveFun": "Have fun!",

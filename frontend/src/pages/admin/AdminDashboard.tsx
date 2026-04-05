@@ -21,6 +21,10 @@ import {
   Chip,
   CircularProgress,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -30,6 +34,16 @@ import QrCodeIcon from '@mui/icons-material/QrCode'
 import PrintIcon from '@mui/icons-material/Print'
 import { quizApi, sessionApi } from '../../services/api'
 import type { Quiz, Session } from '../../types'
+
+// Supported languages for quiz content
+const SUPPORTED_QUIZ_LANGUAGES = [
+  { code: 'da', name: 'Dansk' },
+  { code: 'de', name: 'Deutsch' },
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'pt', name: 'Português' },
+]
 
 export default function AdminDashboard() {
   const { t } = useTranslation()
@@ -42,6 +56,7 @@ export default function AdminDashboard() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newQuizTitle, setNewQuizTitle] = useState('')
   const [newQuizDescription, setNewQuizDescription] = useState('')
+  const [newQuizLanguage, setNewQuizLanguage] = useState('en')
 
   // Delete confirmation
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -73,10 +88,12 @@ export default function AdminDashboard() {
       const quiz = await quizApi.create({
         title: newQuizTitle.trim(),
         description: newQuizDescription.trim() || undefined,
+        defaultLanguage: newQuizLanguage,
       })
       setDialogOpen(false)
       setNewQuizTitle('')
       setNewQuizDescription('')
+      setNewQuizLanguage('en')
       navigate(`/admin/quiz/${quiz.id}`)
     } catch (error) {
       console.error('Failed to create quiz:', error)
@@ -263,7 +280,23 @@ export default function AdminDashboard() {
             label={t('admin.descriptionOptional')}
             value={newQuizDescription}
             onChange={(e) => setNewQuizDescription(e.target.value)}
+            sx={{ mb: 2 }}
           />
+          <FormControl fullWidth>
+            <InputLabel id="quiz-language-label">{t('admin.quizLanguage')}</InputLabel>
+            <Select
+              labelId="quiz-language-label"
+              value={newQuizLanguage}
+              label={t('admin.quizLanguage')}
+              onChange={(e) => setNewQuizLanguage(e.target.value)}
+            >
+              {SUPPORTED_QUIZ_LANGUAGES.map((lang) => (
+                <MenuItem key={lang.code} value={lang.code}>
+                  {lang.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>

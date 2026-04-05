@@ -4,7 +4,6 @@ public class Question
 {
     public Guid Id { get; set; }
     public Guid QuizId { get; set; }
-    public string Text { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
     public int OrderIndex { get; set; }
     public int TimeLimitSeconds { get; set; } = 15;
@@ -12,4 +11,5 @@ public class Question
     
     public Quiz Quiz { get; set; } = null!;
     public ICollection<AnswerOption> AnswerOptions { get; set; } = new List<AnswerOption>();
+    public ICollection<QuestionTranslation> Translations { get; set; } = new List<QuestionTranslation>();
 }

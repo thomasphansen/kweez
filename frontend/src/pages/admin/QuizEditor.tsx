@@ -18,6 +18,11 @@ import {
   FormControlLabel,
   Switch,
   Tooltip,
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
@@ -26,10 +31,22 @@ import SaveIcon from '@mui/icons-material/Save'
 import QrCodeIcon from '@mui/icons-material/QrCode'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import ImageIcon from '@mui/icons-material/Image'
+import StarIcon from '@mui/icons-material/Star'
+import LanguageIcon from '@mui/icons-material/Language'
 import { quizApi } from '../../services/api'
-import type { Question } from '../../types'
+import type { Question, QuizLanguage } from '../../types'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
+
+// Supported languages for quiz content
+const SUPPORTED_QUIZ_LANGUAGES = [
+  { code: 'da', name: 'Dansk' },
+  { code: 'de', name: 'Deutsch' },
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'pt', name: 'Português' },
+]
 
 interface QuestionForm {
   id?: string
@@ -70,6 +87,8 @@ export default function QuizEditor() {
   const [fixedJoinCode, setFixedJoinCode] = useState<string | null>(null)
   const [questions, setQuestions] = useState<QuestionForm[]>([])
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null)
+  const [languages, setLanguages] = useState<QuizLanguage[]>([])
+  const [newLanguageCode, setNewLanguageCode] = useState('')
 
   useEffect(() => {
     if (id) {
@@ -84,6 +103,7 @@ export default function QuizEditor() {
       setDescription(quiz.description || '')
       setFixedJoinCode(quiz.fixedJoinCode || null)
       setUseFixedJoinCode(!!quiz.fixedJoinCode)
+      setLanguages(quiz.languages || [])
       setQuestions(
         quiz.questions.map((q) => ({
           id: q.id,
@@ -235,6 +255,71 @@ export default function QuizEditor() {
     }
   }
 
+  const handleAddLanguage = async () => {
+    if (!newLanguageCode || !id) return
+    
+    // Check if language already exists
+    if (languages.some(l => l.languageCode === newLanguageCode)) {
+      setError(t('quizEditor.languageAlreadyExists'))
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    try {
+      const newLang = await quizApi.addLanguage(id, newLanguageCode)
+      setLanguages([...languages, newLang])
+      setNewLanguageCode('')
+    } catch (err) {
+      setError(t('quizEditor.failedToAddLanguage'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSetDefaultLanguage = async (languageCode: string) => {
+    if (!id) return
+
+    setSaving(true)
+    setError('')
+
+    try {
+      await quizApi.setDefaultLanguage(id, languageCode)
+      setLanguages(languages.map(l => ({
+        ...l,
+        isDefault: l.languageCode === languageCode
+      })))
+    } catch (err) {
+      setError(t('quizEditor.failedToSetDefaultLanguage'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteLanguage = async (languageCode: string) => {
+    if (!id) return
+    
+    // Check if this is the default language
+    const lang = languages.find(l => l.languageCode === languageCode)
+    if (lang?.isDefault) {
+      setError(t('quizEditor.cannotDeleteDefaultLanguage'))
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    try {
+      await quizApi.deleteLanguage(id, languageCode)
+      setLanguages(languages.filter(l => l.languageCode !== languageCode))
+    } catch (err) {
+      setError(t('quizEditor.failedToDeleteLanguage'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSaveQuiz = async () => {
     if (!title.trim()) {
       setError('Quiz title is required')
@@ -249,9 +334,11 @@ export default function QuizEditor() {
         const quiz = await quizApi.create({ 
           title, 
           description: description || undefined,
-          useFixedJoinCode 
+          useFixedJoinCode,
+          defaultLanguage: 'en'  // Default to English for new quizzes created directly
         })
         setFixedJoinCode(quiz.fixedJoinCode || null)
+        setLanguages(quiz.languages || [])
         navigate(`/admin/quiz/${quiz.id}`, { replace: true })
       } else {
         const quiz = await quizApi.update(id!, { 
@@ -381,6 +468,67 @@ export default function QuizEditor() {
           {saving ? t('quizEditor.saving') : t('quizEditor.saveQuiz')}
         </Button>
       </Paper>
+
+      {/* Language Management */}
+      {!isNew && (
+        <Paper sx={{ p: 3, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <LanguageIcon />
+            <Typography variant="h6">{t('quizEditor.languages')}</Typography>
+          </Box>
+          
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t('quizEditor.languagesDescription')}
+          </Typography>
+
+          {/* Current Languages */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+            {languages.map((lang) => {
+              const langInfo = SUPPORTED_QUIZ_LANGUAGES.find(l => l.code === lang.languageCode)
+              return (
+                <Chip
+                  key={lang.id}
+                  label={langInfo?.name || lang.languageCode}
+                  icon={lang.isDefault ? <StarIcon /> : undefined}
+                  color={lang.isDefault ? 'primary' : 'default'}
+                  onDelete={lang.isDefault ? undefined : () => handleDeleteLanguage(lang.languageCode)}
+                  onClick={lang.isDefault ? undefined : () => handleSetDefaultLanguage(lang.languageCode)}
+                  title={lang.isDefault ? t('quizEditor.defaultLanguage') : t('quizEditor.clickToSetDefault')}
+                />
+              )
+            })}
+          </Box>
+
+          {/* Add New Language */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel id="add-language-label">{t('quizEditor.addLanguage')}</InputLabel>
+              <Select
+                labelId="add-language-label"
+                value={newLanguageCode}
+                label={t('quizEditor.addLanguage')}
+                onChange={(e) => setNewLanguageCode(e.target.value)}
+              >
+                {SUPPORTED_QUIZ_LANGUAGES
+                  .filter(lang => !languages.some(l => l.languageCode === lang.code))
+                  .map((lang) => (
+                    <MenuItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={handleAddLanguage}
+              disabled={!newLanguageCode || saving}
+            >
+              {t('common.add')}
+            </Button>
+          </Box>
+        </Paper>
+      )}
 
       {/* Questions */}
       {!isNew && (

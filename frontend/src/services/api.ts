@@ -1,4 +1,4 @@
-import type { Quiz, QuizDetail, Session, JoinResponse, Participant, LeaderboardEntry } from '../types'
+import type { Quiz, QuizDetail, Session, JoinResponse, Participant, LeaderboardEntry, QuizLanguage } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -29,7 +29,7 @@ export const quizApi = {
   
   getById: (id: string) => fetchJson<QuizDetail>(`/api/quizzes/${id}`),
   
-  create: (data: { title: string; description?: string; useFixedJoinCode?: boolean }) =>
+  create: (data: { title: string; description?: string; useFixedJoinCode?: boolean; defaultLanguage: string }) =>
     fetchJson<Quiz>('/api/quizzes', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -86,6 +86,25 @@ export const quizApi = {
 
   deleteQuestionImage: (questionId: string) =>
     fetchJson<void>(`/api/quizzes/questions/${questionId}/image`, { method: 'DELETE' }),
+
+  // Language management
+  getLanguages: (quizId: string) =>
+    fetchJson<QuizLanguage[]>(`/api/quizzes/${quizId}/languages`),
+
+  addLanguage: (quizId: string, languageCode: string) =>
+    fetchJson<QuizLanguage>(`/api/quizzes/${quizId}/languages`, {
+      method: 'POST',
+      body: JSON.stringify({ languageCode }),
+    }),
+
+  setDefaultLanguage: (quizId: string, languageCode: string) =>
+    fetchJson<void>(`/api/quizzes/${quizId}/languages/default`, {
+      method: 'PUT',
+      body: JSON.stringify({ languageCode }),
+    }),
+
+  deleteLanguage: (quizId: string, languageCode: string) =>
+    fetchJson<void>(`/api/quizzes/${quizId}/languages/${languageCode}`, { method: 'DELETE' }),
 }
 
 // Session API

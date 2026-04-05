@@ -15,6 +15,9 @@ public class KweezDbContext : DbContext
     public DbSet<QuizSession> QuizSessions => Set<QuizSession>();
     public DbSet<Participant> Participants => Set<Participant>();
     public DbSet<ParticipantAnswer> ParticipantAnswers => Set<ParticipantAnswer>();
+    public DbSet<QuizLanguage> QuizLanguages => Set<QuizLanguage>();
+    public DbSet<QuestionTranslation> QuestionTranslations => Set<QuestionTranslation>();
+    public DbSet<AnswerOptionTranslation> AnswerOptionTranslations => Set<AnswerOptionTranslation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,22 +35,46 @@ public class KweezDbContext : DbContext
         modelBuilder.Entity<Question>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Text).IsRequired().HasMaxLength(500);
             entity.HasOne(e => e.Quiz)
                   .WithMany(q => q.Questions)
                   .HasForeignKey(e => e.QuizId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // QuestionTranslation
+        modelBuilder.Entity<QuestionTranslation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LanguageCode).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Text).IsRequired().HasMaxLength(500);
+            entity.HasOne(e => e.Question)
+                  .WithMany(q => q.Translations)
+                  .HasForeignKey(e => e.QuestionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.QuestionId, e.LanguageCode }).IsUnique();
+        });
+
         // AnswerOption
         modelBuilder.Entity<AnswerOption>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Text).IsRequired().HasMaxLength(200);
             entity.HasOne(e => e.Question)
                   .WithMany(q => q.AnswerOptions)
                   .HasForeignKey(e => e.QuestionId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AnswerOptionTranslation
+        modelBuilder.Entity<AnswerOptionTranslation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LanguageCode).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Text).IsRequired().HasMaxLength(200);
+            entity.HasOne(e => e.AnswerOption)
+                  .WithMany(a => a.Translations)
+                  .HasForeignKey(e => e.AnswerOptionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.AnswerOptionId, e.LanguageCode }).IsUnique();
         });
 
         // QuizSession
@@ -90,6 +117,19 @@ public class KweezDbContext : DbContext
                   .HasForeignKey(e => e.AnswerOptionId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => new { e.ParticipantId, e.QuestionId }).IsUnique();
+        });
+
+        // QuizLanguage
+        modelBuilder.Entity<QuizLanguage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LanguageCode).IsRequired().HasMaxLength(10);
+            entity.HasOne(e => e.Quiz)
+                  .WithMany(q => q.Languages)
+                  .HasForeignKey(e => e.QuizId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            // Ensure unique language code per quiz
+            entity.HasIndex(e => new { e.QuizId, e.LanguageCode }).IsUnique();
         });
     }
 }

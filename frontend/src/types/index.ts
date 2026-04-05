@@ -1,4 +1,10 @@
 // Quiz types
+export interface QuizLanguage {
+  id: string
+  languageCode: string
+  isDefault: boolean
+}
+
 export interface Quiz {
   id: string
   title: string
@@ -6,6 +12,7 @@ export interface Quiz {
   questionCount: number
   createdAtUtc: string
   fixedJoinCode?: string
+  languages: QuizLanguage[]
 }
 
 export interface QuizDetail {
@@ -15,6 +22,7 @@ export interface QuizDetail {
   createdAtUtc: string
   questions: Question[]
   fixedJoinCode?: string
+  languages: QuizLanguage[]
 }
 
 export interface Question {
