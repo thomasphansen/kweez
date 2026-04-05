@@ -173,13 +173,31 @@ public class QuizService : IQuizService
 
         if (question == null) return null;
 
+        // Store the order index before any modifications
+        var orderIndex = question.OrderIndex;
+
+        // Remove old answers first
+        var oldAnswerIds = question.AnswerOptions.Select(a => a.Id).ToList();
+        foreach (var answerId in oldAnswerIds)
+        {
+            var answer = await _db.AnswerOptions.FindAsync(answerId);
+            if (answer != null)
+            {
+                _db.AnswerOptions.Remove(answer);
+            }
+        }
+        await _db.SaveChangesAsync();
+        
+        // Reload question to get fresh state
+        question = await _db.Questions.FindAsync(questionId);
+        if (question == null) return null;
+        
+        // Update question properties
         question.Text = request.Text;
         question.TimeLimitSeconds = request.TimeLimitSeconds;
-
-        // Remove old answers and add new ones
-        _db.AnswerOptions.RemoveRange(question.AnswerOptions);
         
-        question.AnswerOptions = request.AnswerOptions.Select((a, i) => new AnswerOption
+        // Add new answers
+        var newAnswers = request.AnswerOptions.Select((a, i) => new AnswerOption
         {
             Id = a.Id ?? Guid.NewGuid(),
             QuestionId = questionId,
@@ -187,7 +205,8 @@ public class QuizService : IQuizService
             IsCorrect = a.IsCorrect,
             OrderIndex = i
         }).ToList();
-
+        
+        _db.AnswerOptions.AddRange(newAnswers);
         await _db.SaveChangesAsync();
 
         return new QuestionDto(
@@ -195,7 +214,7 @@ public class QuizService : IQuizService
             question.Text,
             question.OrderIndex,
             question.TimeLimitSeconds,
-            question.AnswerOptions.Select(a => new AnswerOptionDto(
+            newAnswers.Select(a => new AnswerOptionDto(
                 a.Id, a.Text, a.OrderIndex, a.IsCorrect
             )).ToList()
         );
