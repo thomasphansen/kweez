@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Kweez.Api.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8686ae9a0697d72477ad4e1f0367bd616f38e671")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+78d6f5ee83a27efe8558156ff7e9c3dda0d412f3")]
 [assembly: System.Reflection.AssemblyProductAttribute("Kweez.Api.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Kweez.Api.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

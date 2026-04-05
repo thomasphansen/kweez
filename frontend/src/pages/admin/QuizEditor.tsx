@@ -14,11 +14,16 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  FormControlLabel,
+  Switch,
+  Tooltip,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import SaveIcon from '@mui/icons-material/Save'
+import QrCodeIcon from '@mui/icons-material/QrCode'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import { quizApi } from '../../services/api'
 import type { Question } from '../../types'
 
@@ -55,6 +60,8 @@ export default function QuizEditor() {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [useFixedJoinCode, setUseFixedJoinCode] = useState(false)
+  const [fixedJoinCode, setFixedJoinCode] = useState<string | null>(null)
   const [questions, setQuestions] = useState<QuestionForm[]>([])
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null)
 
@@ -69,6 +76,8 @@ export default function QuizEditor() {
       const quiz = await quizApi.getById(quizId)
       setTitle(quiz.title)
       setDescription(quiz.description || '')
+      setFixedJoinCode(quiz.fixedJoinCode || null)
+      setUseFixedJoinCode(!!quiz.fixedJoinCode)
       setQuestions(
         quiz.questions.map((q) => ({
           id: q.id,
@@ -189,10 +198,20 @@ export default function QuizEditor() {
 
     try {
       if (isNew) {
-        const quiz = await quizApi.create({ title, description: description || undefined })
+        const quiz = await quizApi.create({ 
+          title, 
+          description: description || undefined,
+          useFixedJoinCode 
+        })
+        setFixedJoinCode(quiz.fixedJoinCode || null)
         navigate(`/admin/quiz/${quiz.id}`, { replace: true })
       } else {
-        await quizApi.update(id!, { title, description: description || undefined })
+        const quiz = await quizApi.update(id!, { 
+          title, 
+          description: description || undefined,
+          useFixedJoinCode 
+        })
+        setFixedJoinCode(quiz.fixedJoinCode || null)
       }
     } catch (err) {
       setError('Failed to save quiz')
@@ -244,6 +263,67 @@ export default function QuizEditor() {
           onChange={(e) => setDescription(e.target.value)}
           sx={{ mb: 2 }}
         />
+        
+        {/* Fixed QR Code Option */}
+        <Box sx={{ mb: 2 }}>
+          <Tooltip title="Enable this to use a permanent QR code that you can print in advance. The same code will be used every time you start this quiz.">
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useFixedJoinCode}
+                  onChange={(e) => setUseFixedJoinCode(e.target.checked)}
+                />
+              }
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <QrCodeIcon fontSize="small" />
+                  <span>Use fixed QR code (for printing)</span>
+                </Box>
+              }
+            />
+          </Tooltip>
+          
+          {fixedJoinCode && (
+            <Box 
+              sx={{ 
+                mt: 1, 
+                p: 2, 
+                bgcolor: 'primary.50', 
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'primary.200'
+              }}
+            >
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Fixed Join Code:
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    fontFamily: 'monospace', 
+                    fontWeight: 'bold',
+                    letterSpacing: 2
+                  }}
+                >
+                  {fixedJoinCode}
+                </Typography>
+                <IconButton 
+                  size="small"
+                  onClick={() => {
+                    navigator.clipboard.writeText(fixedJoinCode)
+                  }}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Players can join at: {window.location.origin}/join?code={fixedJoinCode}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+        
         <Button
           variant="contained"
           startIcon={<SaveIcon />}

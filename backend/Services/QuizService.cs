@@ -36,7 +36,8 @@ public class QuizService : IQuizService
                 q.Title,
                 q.Description,
                 q.Questions.Count,
-                q.CreatedAtUtc
+                q.CreatedAtUtc,
+                q.FixedJoinCode
             ))
             .ToListAsync();
     }
@@ -66,24 +67,45 @@ public class QuizService : IQuizService
                     a.OrderIndex,
                     a.IsCorrect
                 )).ToList()
-            )).ToList()
+            )).ToList(),
+            quiz.FixedJoinCode
         );
+    }
+
+    private static string GenerateJoinCode()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var random = new Random();
+        return new string(Enumerable.Range(0, 6).Select(_ => chars[random.Next(chars.Length)]).ToArray());
     }
 
     public async Task<QuizDto> CreateQuizAsync(CreateQuizRequest request)
     {
+        string? fixedJoinCode = null;
+        
+        if (request.UseFixedJoinCode)
+        {
+            // Generate a unique fixed join code
+            do
+            {
+                fixedJoinCode = GenerateJoinCode();
+            } while (await _db.Quizzes.AnyAsync(q => q.FixedJoinCode == fixedJoinCode) ||
+                     await _db.QuizSessions.AnyAsync(s => s.JoinCode == fixedJoinCode));
+        }
+        
         var quiz = new Quiz
         {
             Id = Guid.NewGuid(),
             Title = request.Title,
             Description = request.Description,
+            FixedJoinCode = fixedJoinCode,
             CreatedAtUtc = DateTime.UtcNow
         };
 
         _db.Quizzes.Add(quiz);
         await _db.SaveChangesAsync();
 
-        return new QuizDto(quiz.Id, quiz.Title, quiz.Description, 0, quiz.CreatedAtUtc);
+        return new QuizDto(quiz.Id, quiz.Title, quiz.Description, 0, quiz.CreatedAtUtc, quiz.FixedJoinCode);
     }
 
     public async Task<QuizDto?> UpdateQuizAsync(Guid id, UpdateQuizRequest request)
@@ -97,10 +119,31 @@ public class QuizService : IQuizService
         quiz.Title = request.Title;
         quiz.Description = request.Description;
         quiz.UpdatedAtUtc = DateTime.UtcNow;
+        
+        // Handle fixed join code toggle
+        if (request.UseFixedJoinCode.HasValue)
+        {
+            if (request.UseFixedJoinCode.Value && quiz.FixedJoinCode == null)
+            {
+                // Enable fixed join code - generate a new one
+                string fixedJoinCode;
+                do
+                {
+                    fixedJoinCode = GenerateJoinCode();
+                } while (await _db.Quizzes.AnyAsync(q => q.FixedJoinCode == fixedJoinCode && q.Id != id) ||
+                         await _db.QuizSessions.AnyAsync(s => s.JoinCode == fixedJoinCode));
+                quiz.FixedJoinCode = fixedJoinCode;
+            }
+            else if (!request.UseFixedJoinCode.Value)
+            {
+                // Disable fixed join code
+                quiz.FixedJoinCode = null;
+            }
+        }
 
         await _db.SaveChangesAsync();
 
-        return new QuizDto(quiz.Id, quiz.Title, quiz.Description, quiz.Questions.Count, quiz.CreatedAtUtc);
+        return new QuizDto(quiz.Id, quiz.Title, quiz.Description, quiz.Questions.Count, quiz.CreatedAtUtc, quiz.FixedJoinCode);
     }
 
     public async Task<bool> DeleteQuizAsync(Guid id)

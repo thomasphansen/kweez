@@ -49,10 +49,30 @@ public class SessionService : ISessionService
             ?? throw new InvalidOperationException("Quiz not found");
 
         string joinCode;
-        do
+        
+        if (!string.IsNullOrEmpty(quiz.FixedJoinCode))
         {
-            joinCode = GenerateJoinCode();
-        } while (await _db.QuizSessions.AnyAsync(s => s.JoinCode == joinCode));
+            // Use the fixed join code - end any existing session with this code
+            var existingSession = await _db.QuizSessions
+                .FirstOrDefaultAsync(s => s.JoinCode == quiz.FixedJoinCode && s.Status != SessionStatus.Finished);
+            
+            if (existingSession != null)
+            {
+                existingSession.Status = SessionStatus.Finished;
+                existingSession.FinishedAtUtc = DateTime.UtcNow;
+            }
+            
+            joinCode = quiz.FixedJoinCode;
+        }
+        else
+        {
+            // Generate a new unique join code
+            do
+            {
+                joinCode = GenerateJoinCode();
+            } while (await _db.QuizSessions.AnyAsync(s => s.JoinCode == joinCode) ||
+                     await _db.Quizzes.AnyAsync(q => q.FixedJoinCode == joinCode));
+        }
 
         var session = new QuizSession
         {

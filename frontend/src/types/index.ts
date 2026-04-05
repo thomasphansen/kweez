@@ -5,6 +5,7 @@ export interface Quiz {
   description?: string
   questionCount: number
   createdAtUtc: string
+  fixedJoinCode?: string
 }
 
 export interface QuizDetail {
@@ -13,6 +14,7 @@ export interface QuizDetail {
   description?: string
   createdAtUtc: string
   questions: Question[]
+  fixedJoinCode?: string
 }
 
 export interface Question {

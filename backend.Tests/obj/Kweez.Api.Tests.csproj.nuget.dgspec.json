@@ -50,7 +50,7 @@
           "dependencies": {
             "FluentAssertions": {
               "target": "Package",
-              "version": "[8.0.1, )"
+              "version": "[8.9.0, )"
             },
             "Microsoft.AspNetCore.Mvc.Testing": {
               "target": "Package",
@@ -62,7 +62,7 @@
             },
             "Microsoft.NET.Test.Sdk": {
               "target": "Package",
-              "version": "[17.12.0, )"
+              "version": "[18.3.0, )"
             },
             "Moq": {
               "target": "Package",
@@ -72,7 +72,7 @@
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[6.0.4, )"
+              "version": "[8.0.1, )"
             },
             "xunit": {
               "target": "Package",
@@ -82,7 +82,7 @@
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[3.0.2, )"
+              "version": "[3.1.5, )"
             }
           },
           "imports": [
@@ -426,6 +426,10 @@
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.0.5, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
               "target": "Package",
               "version": "[10.0.5, )"
             },

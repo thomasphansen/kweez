@@ -29,13 +29,13 @@ export const quizApi = {
   
   getById: (id: string) => fetchJson<QuizDetail>(`/api/quizzes/${id}`),
   
-  create: (data: { title: string; description?: string }) =>
+  create: (data: { title: string; description?: string; useFixedJoinCode?: boolean }) =>
     fetchJson<Quiz>('/api/quizzes', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   
-  update: (id: string, data: { title: string; description?: string }) =>
+  update: (id: string, data: { title: string; description?: string; useFixedJoinCode?: boolean }) =>
     fetchJson<Quiz>(`/api/quizzes/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

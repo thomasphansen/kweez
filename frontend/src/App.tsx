@@ -12,6 +12,7 @@ import FinalPage from './pages/player/FinalPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import QuizEditor from './pages/admin/QuizEditor'
 import LiveControl from './pages/admin/LiveControl'
+import PrintQRCode from './pages/admin/PrintQRCode'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         {/* Admin routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/quiz/:id?" element={<QuizEditor />} />
+        <Route path="/admin/quiz/:id/print" element={<PrintQRCode />} />
         <Route path="/admin/live/:sessionId" element={<LiveControl />} />
       </Routes>
     </Box>

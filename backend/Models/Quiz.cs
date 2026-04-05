@@ -8,6 +8,12 @@ public class Quiz
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }
     
+    /// <summary>
+    /// Optional fixed join code for this quiz. When set, all sessions for this quiz
+    /// will use this code, allowing QR codes to be printed in advance.
+    /// </summary>
+    public string? FixedJoinCode { get; set; }
+    
     public ICollection<Question> Questions { get; set; } = new List<Question>();
     public ICollection<QuizSession> Sessions { get; set; } = new List<QuizSession>();
 }

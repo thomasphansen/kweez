@@ -19,11 +19,14 @@ import {
   TextField,
   Chip,
   CircularProgress,
+  Tooltip,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import QrCodeIcon from '@mui/icons-material/QrCode'
+import PrintIcon from '@mui/icons-material/Print'
 import { quizApi, sessionApi } from '../../services/api'
 import type { Quiz, Session } from '../../types'
 
@@ -175,7 +178,22 @@ export default function AdminDashboard() {
                 sx={{ bgcolor: 'background.default', borderRadius: 2, mb: 1 }}
               >
                 <ListItemText
-                  primary={quiz.title}
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {quiz.title}
+                      {quiz.fixedJoinCode && (
+                        <Tooltip title={`Fixed code: ${quiz.fixedJoinCode}`}>
+                          <Chip
+                            icon={<QrCodeIcon />}
+                            label={quiz.fixedJoinCode}
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  }
                   secondary={`${quiz.questionCount} questions`}
                 />
                 <ListItemSecondaryAction>
@@ -186,6 +204,15 @@ export default function AdminDashboard() {
                   >
                     <PlayArrowIcon />
                   </IconButton>
+                  {quiz.fixedJoinCode && (
+                    <IconButton
+                      color="secondary"
+                      onClick={() => window.open(`/admin/quiz/${quiz.id}/print`, '_blank')}
+                      title="Print QR Codes"
+                    >
+                      <PrintIcon />
+                    </IconButton>
+                  )}
                   <IconButton 
                     onClick={() => navigate(`/admin/quiz/${quiz.id}`)}
                     title="Edit"

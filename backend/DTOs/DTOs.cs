@@ -6,7 +6,8 @@ public record QuizDto(
     string Title,
     string? Description,
     int QuestionCount,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? FixedJoinCode = null
 );
 
 public record QuizDetailDto(
@@ -14,17 +15,20 @@ public record QuizDetailDto(
     string Title,
     string? Description,
     DateTime CreatedAtUtc,
-    List<QuestionDto> Questions
+    List<QuestionDto> Questions,
+    string? FixedJoinCode = null
 );
 
 public record CreateQuizRequest(
     string Title,
-    string? Description
+    string? Description,
+    bool UseFixedJoinCode = false
 );
 
 public record UpdateQuizRequest(
     string Title,
-    string? Description
+    string? Description,
+    bool? UseFixedJoinCode = null
 );
 
 // Question DTOs
