@@ -498,4 +498,116 @@ public class SessionServiceTests
     }
 
     #endregion
+
+    #region Fixed Join Code Tests
+
+    [Fact]
+    public async Task CreateSessionAsync_WithFixedJoinCode_UsesFixedCode()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        quiz.FixedJoinCode = "QUIZ01";
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Act
+        var session = await service.CreateSessionAsync(quiz.Id);
+
+        // Assert
+        session.JoinCode.Should().Be("QUIZ01");
+    }
+
+    [Fact]
+    public async Task CreateSessionAsync_WithFixedJoinCode_CanReplayQuiz()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        quiz.FixedJoinCode = "REPLAY";
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Act - Create first session and finish it
+        var session1 = await service.CreateSessionAsync(quiz.Id);
+        await service.StartSessionAsync(session1.Id);
+        await service.EndSessionAsync(session1.Id);
+
+        // Create second session (replay)
+        var session2 = await service.CreateSessionAsync(quiz.Id);
+
+        // Assert
+        session2.Should().NotBeNull();
+        session2.JoinCode.Should().Be("REPLAY");
+        session2.Id.Should().NotBe(session1.Id);
+        
+        // Verify first session still exists but with modified join code
+        var oldSession = await db.QuizSessions.FindAsync(session1.Id);
+        oldSession.Should().NotBeNull();
+        oldSession!.Status.Should().Be(SessionStatus.Finished);
+        oldSession.JoinCode.Should().StartWith("X");
+        oldSession.JoinCode.Should().HaveLength(10);
+    }
+
+    [Fact]
+    public async Task CreateSessionAsync_WithFixedJoinCode_EndsActiveSession()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        quiz.FixedJoinCode = "ACTIVE";
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Create and start first session (don't end it)
+        var session1 = await service.CreateSessionAsync(quiz.Id);
+        await service.StartSessionAsync(session1.Id);
+
+        // Act - Create second session while first is still active
+        var session2 = await service.CreateSessionAsync(quiz.Id);
+
+        // Assert
+        session2.Should().NotBeNull();
+        session2.JoinCode.Should().Be("ACTIVE");
+        
+        // Verify first session was automatically ended
+        var oldSession = await db.QuizSessions.FindAsync(session1.Id);
+        oldSession!.Status.Should().Be(SessionStatus.Finished);
+        oldSession.JoinCode.Should().StartWith("X");
+        oldSession.JoinCode.Should().HaveLength(10);
+    }
+
+    [Fact]
+    public async Task CreateSessionAsync_WithFixedJoinCode_MultipleReplays()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var quiz = await TestDbContextFactory.SeedQuizWithMultipleQuestionsAsync(db);
+        quiz.FixedJoinCode = "MULTI";
+        await db.SaveChangesAsync();
+        
+        var service = new SessionService(db);
+
+        // Act - Create and end multiple sessions
+        var session1 = await service.CreateSessionAsync(quiz.Id);
+        await service.EndSessionAsync(session1.Id);
+
+        var session2 = await service.CreateSessionAsync(quiz.Id);
+        await service.EndSessionAsync(session2.Id);
+
+        var session3 = await service.CreateSessionAsync(quiz.Id);
+
+        // Assert - All sessions created successfully, latest has the fixed code
+        session3.JoinCode.Should().Be("MULTI");
+        
+        var allSessions = db.QuizSessions.Where(s => s.QuizId == quiz.Id).ToList();
+        allSessions.Should().HaveCount(3);
+        allSessions.Count(s => s.JoinCode == "MULTI").Should().Be(1);
+        allSessions.Count(s => s.JoinCode.StartsWith("X") && s.JoinCode.Length == 10).Should().Be(2);
+    }
+
+    #endregion
 }

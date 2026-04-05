@@ -52,14 +52,23 @@ public class SessionService : ISessionService
         
         if (!string.IsNullOrEmpty(quiz.FixedJoinCode))
         {
-            // Use the fixed join code - end any existing session with this code
-            var existingSession = await _db.QuizSessions
-                .FirstOrDefaultAsync(s => s.JoinCode == quiz.FixedJoinCode && s.Status != SessionStatus.Finished);
+            // Use the fixed join code - end any existing sessions with this code
+            var existingSessions = await _db.QuizSessions
+                .Where(s => s.JoinCode == quiz.FixedJoinCode)
+                .ToListAsync();
             
-            if (existingSession != null)
+            foreach (var existingSession in existingSessions)
             {
                 existingSession.Status = SessionStatus.Finished;
                 existingSession.FinishedAtUtc = DateTime.UtcNow;
+                // Clear the join code so we can reuse it (unique constraint)
+                // Use a short unique code that fits in 10 chars: X + 9 chars from GUID
+                existingSession.JoinCode = "X" + existingSession.Id.ToString("N")[..9].ToUpper();
+            }
+            
+            if (existingSessions.Count > 0)
+            {
+                await _db.SaveChangesAsync();
             }
             
             joinCode = quiz.FixedJoinCode;
