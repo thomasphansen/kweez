@@ -1,19 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, LinearProgress, Grid, Button } from '@mui/material'
-import CheckIcon from '@mui/icons-material/Check'
-import CloseIcon from '@mui/icons-material/Close'
 import { useSession } from '../../context/SessionContext'
 import { answerColors } from '../../theme'
 import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function PlayPage() {
   const navigate = useNavigate()
-  const { playerSession, currentQuestion, lastAnswerResult, submitAnswer } = useSession()
+  const { playerSession, currentQuestion, selectedAnswerId, submitAnswer } = useSession()
   
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(0)
-  const [hasAnswered, setHasAnswered] = useState(false)
 
   // Redirect if no session or question
   useEffect(() => {
@@ -26,9 +22,7 @@ export default function PlayPage() {
       return
     }
 
-    // Reset state for new question
-    setSelectedAnswer(null)
-    setHasAnswered(false)
+    // Reset timer for new question
     setTimeLeft(currentQuestion.timeLimitSeconds)
   }, [playerSession, currentQuestion, navigate])
 
@@ -44,25 +38,25 @@ export default function PlayPage() {
   }, [timeLeft])
 
   const handleAnswerClick = useCallback(async (answerId: string) => {
-    if (hasAnswered || timeLeft <= 0) return
+    // Allow clicking even if already answered (to change answer)
+    // But not if time has run out
+    if (timeLeft <= 0) return
 
-    setSelectedAnswer(answerId)
-    setHasAnswered(true)
     await submitAnswer(answerId)
-  }, [hasAnswered, timeLeft, submitAnswer])
+  }, [timeLeft, submitAnswer])
 
   if (!currentQuestion) {
     return null
   }
 
   const progress = (timeLeft / currentQuestion.timeLimitSeconds) * 100
-  const showResult = lastAnswerResult !== null
+  const hasAnswered = selectedAnswerId !== null
 
   return (
     <>
-      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', p: 2 }}>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
       {/* Header */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2, flexShrink: 0 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Question {currentQuestion.questionIndex + 1} of {currentQuestion.totalQuestions}
         </Typography>
@@ -80,60 +74,28 @@ export default function PlayPage() {
         />
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
           <Typography variant="h6">{timeLeft}s</Typography>
-          {hasAnswered && !showResult && (
+          {hasAnswered && (
             <Typography variant="body2" color="text.secondary">
-              Answer submitted!
+              {timeLeft > 0 ? 'Tap another answer to change' : 'Answer submitted!'}
             </Typography>
           )}
         </Box>
       </Box>
 
       {/* Question */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0 }}>
         <Typography 
-          variant="h4" 
+          variant="h5" 
           align="center" 
-          sx={{ mb: 4, px: 2 }}
+          sx={{ mb: 3, px: 1, flexShrink: 0 }}
         >
           {currentQuestion.text}
         </Typography>
 
-        {/* Answer result feedback */}
-        {showResult && (
-          <Box 
-            sx={{ 
-              textAlign: 'center', 
-              mb: 4,
-              p: 3,
-              borderRadius: 3,
-              bgcolor: lastAnswerResult.isCorrect ? 'success.main' : 'error.main',
-              color: lastAnswerResult.isCorrect ? 'success.contrastText' : 'error.contrastText',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-              {lastAnswerResult.isCorrect ? (
-                <CheckIcon fontSize="large" />
-              ) : (
-                <CloseIcon fontSize="large" />
-              )}
-              <Typography variant="h5">
-                {lastAnswerResult.isCorrect ? 'Correct!' : 'Wrong!'}
-              </Typography>
-            </Box>
-            {lastAnswerResult.isCorrect && (
-              <Typography variant="h6">
-                +{lastAnswerResult.score} points
-              </Typography>
-            )}
-          </Box>
-        )}
-
         {/* Answer buttons */}
-        <Grid container spacing={2}>
+        <Grid container spacing={1.5} sx={{ flex: 1, alignContent: 'center' }}>
           {currentQuestion.answers.map((answer, index) => {
-            const isSelected = selectedAnswer === answer.id
-            const isCorrect = showResult && answer.id === lastAnswerResult?.correctAnswerId
-            const isWrong = showResult && isSelected && !lastAnswerResult?.isCorrect
+            const isSelected = selectedAnswerId === answer.id
 
             return (
               <Grid item xs={6} key={answer.id}>
@@ -141,16 +103,17 @@ export default function PlayPage() {
                   fullWidth
                   variant="contained"
                   onClick={() => handleAnswerClick(answer.id)}
-                  disabled={hasAnswered || timeLeft <= 0}
+                  disabled={timeLeft <= 0}
                   sx={{
-                    py: 4,
-                    px: 2,
-                    fontSize: '1.1rem',
+                    py: { xs: 4, sm: 5 },
+                    px: 1,
+                    minHeight: { xs: 80, sm: 100 },
+                    fontSize: { xs: '1rem', sm: '1.2rem' },
                     fontWeight: 600,
                     bgcolor: answerColors[index],
                     color: 'white',
-                    opacity: showResult && !isCorrect && !isSelected ? 0.4 : 1,
                     border: isSelected ? '4px solid white' : 'none',
+                    boxShadow: isSelected ? '0 0 20px rgba(255,255,255,0.5)' : 'none',
                     '&:hover': {
                       bgcolor: answerColors[index],
                       opacity: 0.9,
@@ -158,40 +121,30 @@ export default function PlayPage() {
                     '&:disabled': {
                       bgcolor: answerColors[index],
                       color: 'white',
+                      opacity: isSelected ? 1 : 0.6,
                     },
                     position: 'relative',
+                    lineHeight: 1.3,
                   }}
                 >
                   {answer.text}
-                  {isCorrect && (
-                    <CheckIcon 
-                      sx={{ 
-                        position: 'absolute', 
-                        top: 8, 
-                        right: 8,
-                        bgcolor: 'success.main',
-                        borderRadius: '50%',
-                        p: 0.5,
-                      }} 
-                    />
-                  )}
-                  {isWrong && (
-                    <CloseIcon 
-                      sx={{ 
-                        position: 'absolute', 
-                        top: 8, 
-                        right: 8,
-                        bgcolor: 'error.main',
-                        borderRadius: '50%',
-                        p: 0.5,
-                      }} 
-                    />
-                  )}
                 </Button>
               </Grid>
             )
           })}
         </Grid>
+
+        {/* Waiting message when time is up */}
+        {timeLeft <= 0 && (
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            align="center" 
+            sx={{ mt: 2, flexShrink: 0 }}
+          >
+            Waiting for results...
+          </Typography>
+        )}
       </Box>
     </Box>
     

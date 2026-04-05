@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import {
   createTestQuestion,
   createTestSessionState,
-  createTestAnswerResult,
+  createTestAnswerSubmitted,
   createTestQuestionResults,
   createTestLeaderboardEntry,
   createTestParticipant,
@@ -142,7 +142,9 @@ describe('SessionContext', () => {
     it('should have no game state initially', () => {
       const { result } = renderHook(() => useSession(), { wrapper })
       expect(result.current.currentQuestion).toBeNull()
-      expect(result.current.lastAnswerResult).toBeNull()
+      expect(result.current.selectedAnswerId).toBeNull()
+      expect(result.current.lastQuestion).toBeNull()
+      expect(result.current.lastSelectedAnswerId).toBeNull()
       expect(result.current.questionResults).toBeNull()
       expect(result.current.leaderboard).toEqual([])
       expect(result.current.isQuizEnded).toBe(false)
@@ -271,7 +273,7 @@ describe('SessionContext', () => {
       // First, set some game state via events
       act(() => {
         emit('QuestionReleased', createTestQuestion())
-        emit('AnswerResult', createTestAnswerResult())
+        emit('AnswerSubmitted', createTestAnswerSubmitted())
         emit('LeaderboardUpdated', [createTestLeaderboardEntry()])
       })
       
@@ -281,7 +283,9 @@ describe('SessionContext', () => {
       })
       
       expect(result.current.currentQuestion).toBeNull()
-      expect(result.current.lastAnswerResult).toBeNull()
+      expect(result.current.selectedAnswerId).toBeNull()
+      expect(result.current.lastQuestion).toBeNull()
+      expect(result.current.lastSelectedAnswerId).toBeNull()
       expect(result.current.questionResults).toBeNull()
       expect(result.current.leaderboard).toEqual([])
       expect(result.current.isQuizEnded).toBe(false)
@@ -312,12 +316,12 @@ describe('SessionContext', () => {
       expect(result.current.currentQuestion).toEqual(testQuestion)
     })
 
-    it('should clear lastAnswerResult and questionResults on QuestionReleased', () => {
+    it('should clear selectedAnswerId and questionResults on QuestionReleased', () => {
       const { result } = renderHook(() => useSession(), { wrapper })
       
       // Set some previous results
       act(() => {
-        emit('AnswerResult', createTestAnswerResult())
+        emit('AnswerSubmitted', createTestAnswerSubmitted())
         emit('QuestionClosed', createTestQuestionResults())
       })
       
@@ -326,19 +330,19 @@ describe('SessionContext', () => {
         emit('QuestionReleased', createTestQuestion())
       })
       
-      expect(result.current.lastAnswerResult).toBeNull()
+      expect(result.current.selectedAnswerId).toBeNull()
       expect(result.current.questionResults).toBeNull()
     })
 
-    it('should update lastAnswerResult on AnswerResult event', () => {
+    it('should update selectedAnswerId on AnswerSubmitted event', () => {
       const { result } = renderHook(() => useSession(), { wrapper })
-      const testResult = createTestAnswerResult()
+      const testResult = createTestAnswerSubmitted({ selectedAnswerId: 'a3' })
       
       act(() => {
-        emit('AnswerResult', testResult)
+        emit('AnswerSubmitted', testResult)
       })
       
-      expect(result.current.lastAnswerResult).toEqual(testResult)
+      expect(result.current.selectedAnswerId).toBe('a3')
     })
 
     it('should update questionResults and leaderboard on QuestionClosed event', () => {

@@ -8,7 +8,7 @@ namespace Kweez.Api.Services;
 public interface IScoringService
 {
     int CalculateScore(long responseTimeMs, bool isCorrect);
-    Task<AnswerResultDto?> SubmitAnswerAsync(Guid participantId, Guid questionId, Guid answerOptionId, DateTime questionReleasedAtUtc);
+    Task<AnswerSubmittedDto?> SubmitAnswerAsync(Guid participantId, Guid questionId, Guid answerOptionId, DateTime questionReleasedAtUtc);
     Task<QuestionResultsDto?> GetQuestionResultsAsync(Guid sessionId, Guid questionId);
 }
 
@@ -32,7 +32,7 @@ public class ScoringService : IScoringService
         return Math.Max(0, score);
     }
 
-    public async Task<AnswerResultDto?> SubmitAnswerAsync(
+    public async Task<AnswerSubmittedDto?> SubmitAnswerAsync(
         Guid participantId, 
         Guid questionId, 
         Guid answerOptionId,
@@ -40,12 +40,6 @@ public class ScoringService : IScoringService
     {
         var participant = await _db.Participants.FindAsync(participantId);
         if (participant == null) return null;
-
-        // Check if already answered
-        var existingAnswer = await _db.ParticipantAnswers
-            .FirstOrDefaultAsync(a => a.ParticipantId == participantId && a.QuestionId == questionId);
-        
-        if (existingAnswer != null) return null; // Already answered
 
         var answerOption = await _db.AnswerOptions
             .Include(a => a.Question)
@@ -57,9 +51,31 @@ public class ScoringService : IScoringService
 
         var submittedAt = DateTime.UtcNow;
         var responseTimeMs = (long)(submittedAt - questionReleasedAtUtc).TotalMilliseconds;
-        var isCorrect = answerOption.IsCorrect;
-        var score = CalculateScore(responseTimeMs, isCorrect);
 
+        // Check if already answered this question
+        var existingAnswer = await _db.ParticipantAnswers
+            .FirstOrDefaultAsync(a => a.ParticipantId == participantId && a.QuestionId == questionId);
+        
+        if (existingAnswer != null)
+        {
+            // Player is changing their answer
+            if (existingAnswer.AnswerOptionId == answerOptionId)
+            {
+                // Same answer clicked again - ignore (keep original time)
+                return new AnswerSubmittedDto(answerOptionId);
+            }
+            
+            // Different answer - update the answer AND the response time
+            // (the time of the final answer is used for scoring)
+            existingAnswer.AnswerOptionId = answerOptionId;
+            existingAnswer.SubmittedAtUtc = submittedAt;
+            existingAnswer.ResponseTimeMs = responseTimeMs;
+            await _db.SaveChangesAsync();
+            
+            return new AnswerSubmittedDto(answerOptionId);
+        }
+
+        // First answer for this question
         var answer = new ParticipantAnswer
         {
             Id = Guid.NewGuid(),
@@ -68,19 +84,13 @@ public class ScoringService : IScoringService
             AnswerOptionId = answerOptionId,
             SubmittedAtUtc = submittedAt,
             ResponseTimeMs = responseTimeMs,
-            Score = score
+            Score = 0 // Score will be calculated when question closes
         };
 
         _db.ParticipantAnswers.Add(answer);
-        
-        // Update participant's total score
-        participant.TotalScore += score;
-        
         await _db.SaveChangesAsync();
 
-        var correctAnswerId = answerOption.Question.AnswerOptions.First(a => a.IsCorrect).Id;
-
-        return new AnswerResultDto(isCorrect, score, responseTimeMs, correctAnswerId);
+        return new AnswerSubmittedDto(answerOptionId);
     }
 
     public async Task<QuestionResultsDto?> GetQuestionResultsAsync(Guid sessionId, Guid questionId)
@@ -98,13 +108,29 @@ public class ScoringService : IScoringService
 
         if (question == null) return null;
 
+        var correctAnswerId = question.AnswerOptions.First(a => a.IsCorrect).Id;
+
+        // Calculate scores now that question is closed (based on final answer)
+        foreach (var participant in session.Participants)
+        {
+            var answer = participant.Answers.FirstOrDefault();
+            if (answer != null)
+            {
+                var isCorrect = answer.AnswerOptionId == correctAnswerId;
+                var score = CalculateScore(answer.ResponseTimeMs, isCorrect);
+                
+                // Update the stored score
+                answer.Score = score;
+                participant.TotalScore += score;
+            }
+        }
+        await _db.SaveChangesAsync();
+
         // Count answers per option
         var answerCounts = question.AnswerOptions.ToDictionary(
             a => a.Id,
             a => session.Participants.Count(p => p.Answers.Any(ans => ans.AnswerOptionId == a.Id))
         );
-
-        var correctAnswerId = question.AnswerOptions.First(a => a.IsCorrect).Id;
 
         // Build leaderboard
         var leaderboard = session.Participants

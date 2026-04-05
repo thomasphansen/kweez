@@ -93,6 +93,11 @@ export interface AnswerChoice {
   index: number
 }
 
+export interface AnswerSubmitted {
+  selectedAnswerId: string
+}
+
+// Legacy - kept for compatibility
 export interface AnswerResult {
   isCorrect: boolean
   score: number

@@ -73,28 +73,32 @@ export default function PrintQRCode() {
           @media print {
             @page {
               size: A4;
-              margin: 8mm;
+              margin: 0;
             }
-            body {
+            html, body {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
-              margin: 0;
-              padding: 0;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 210mm;
+              height: 297mm;
             }
             .print-container {
-              width: 194mm !important;
-              height: 281mm !important;
-              padding: 0 !important;
+              width: 210mm !important;
+              height: 297mm !important;
+              padding: 10mm !important;
               margin: 0 !important;
+              box-sizing: border-box !important;
             }
           }
           
           @media screen {
             .print-container {
-              max-width: 194mm;
-              margin: 0 auto;
-              padding: 8mm;
+              max-width: 210mm;
+              margin: 20px;
+              padding: 10mm;
               background: white;
+              box-sizing: border-box;
             }
           }
         `}
@@ -103,8 +107,8 @@ export default function PrintQRCode() {
       <Box
         className="print-container"
         sx={{
-          width: '194mm', // A4 width minus margins (210 - 2*8)
-          height: '281mm', // A4 height minus margins (297 - 2*8)
+          width: '210mm', // A4 width
+          height: '297mm', // A4 height
           backgroundColor: 'white',
           color: 'black',
           fontFamily: 'Arial, sans-serif',
@@ -181,8 +185,10 @@ export default function PrintQRCode() {
                     color: '#666',
                     textAlign: 'center',
                     marginTop: '1mm',
-                    wordBreak: 'break-all',
-                    maxWidth: '90%',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%',
                     lineHeight: 1.2,
                   }}
                 >

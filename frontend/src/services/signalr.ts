@@ -3,7 +3,7 @@ import type {
   SessionState,
   Participant,
   QuestionReleased,
-  AnswerResult,
+  AnswerSubmitted,
   QuestionResults,
   LeaderboardEntry,
 } from '../types'
@@ -13,7 +13,7 @@ export type QuizHubEvents = {
   PlayerLeft: (participantId: string) => void
   SessionStarted: () => void
   QuestionReleased: (question: QuestionReleased) => void
-  AnswerResult: (result: AnswerResult) => void
+  AnswerSubmitted: (result: AnswerSubmitted) => void
   QuestionClosed: (results: QuestionResults) => void
   LeaderboardUpdated: (leaderboard: LeaderboardEntry[]) => void
   QuizEnded: (finalLeaderboard: LeaderboardEntry[]) => void
@@ -94,7 +94,7 @@ class QuizHubService {
       'PlayerLeft',
       'SessionStarted',
       'QuestionReleased',
-      'AnswerResult',
+      'AnswerSubmitted',
       'QuestionClosed',
       'LeaderboardUpdated',
       'QuizEnded',

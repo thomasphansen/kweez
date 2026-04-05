@@ -345,7 +345,11 @@ export default function LiveControl() {
                   startIcon={<SkipNextIcon />}
                   onClick={handleNextQuestion}
                 >
-                  {questionResults ? 'Next Question' : 'First Question'}
+                  {!questionResults 
+                    ? 'First Question' 
+                    : questionResults.questionIndex + 1 >= (sessionState?.totalQuestions || 0)
+                      ? 'Final Results'
+                      : 'Next Question'}
                 </Button>
               )}
 

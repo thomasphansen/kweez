@@ -75,7 +75,7 @@ public class ScoringServiceTests
     #region SubmitAnswerAsync Tests
 
     [Fact]
-    public async Task SubmitAnswerAsync_WhenCorrectAnswer_ReturnsCorrectResultAndUpdatesScore()
+    public async Task SubmitAnswerAsync_WhenFirstAnswer_ReturnsSelectedAnswerId()
     {
         // Arrange
         using var db = TestDbContextFactory.Create();
@@ -84,7 +84,7 @@ public class ScoringServiceTests
 
         var question = quiz.Questions.First();
         var correctAnswer = question.AnswerOptions.First(a => a.IsCorrect);
-        var questionReleasedAt = DateTime.UtcNow.AddMilliseconds(-500); // 500ms ago
+        var questionReleasedAt = DateTime.UtcNow.AddMilliseconds(-500);
 
         // Act
         var result = await service.SubmitAnswerAsync(
@@ -96,17 +96,16 @@ public class ScoringServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.IsCorrect.Should().BeTrue();
-        result.Score.Should().BeGreaterThan(900); // Fast answer should get high score
-        result.CorrectAnswerId.Should().Be(correctAnswer.Id);
+        result!.SelectedAnswerId.Should().Be(correctAnswer.Id);
 
-        // Verify participant score was updated
-        var updatedParticipant = await db.Participants.FindAsync(participant.Id);
-        updatedParticipant!.TotalScore.Should().Be(result.Score);
+        // Verify answer was stored
+        var storedAnswer = db.ParticipantAnswers.First(a => a.ParticipantId == participant.Id);
+        storedAnswer.AnswerOptionId.Should().Be(correctAnswer.Id);
+        storedAnswer.Score.Should().Be(0); // Score not calculated yet
     }
 
     [Fact]
-    public async Task SubmitAnswerAsync_WhenWrongAnswer_ReturnsZeroScore()
+    public async Task SubmitAnswerAsync_WhenChangingAnswer_UpdatesStoredAnswerAndTime()
     {
         // Arrange
         using var db = TestDbContextFactory.Create();
@@ -114,27 +113,43 @@ public class ScoringServiceTests
         var service = new ScoringService(db);
 
         var question = quiz.Questions.First();
-        var wrongAnswer = question.AnswerOptions.First(a => !a.IsCorrect);
         var correctAnswer = question.AnswerOptions.First(a => a.IsCorrect);
-        var questionReleasedAt = DateTime.UtcNow;
+        var wrongAnswer = question.AnswerOptions.First(a => !a.IsCorrect);
+        var questionReleasedAt = DateTime.UtcNow.AddSeconds(-5); // Released 5 seconds ago
 
-        // Act
+        // Submit first answer (wrong) - should record ~5000ms response time
+        await service.SubmitAnswerAsync(participant.Id, question.Id, wrongAnswer.Id, questionReleasedAt);
+        var originalAnswer = db.ParticipantAnswers.First(a => a.ParticipantId == participant.Id);
+        var originalResponseTime = originalAnswer.ResponseTimeMs;
+        originalResponseTime.Should().BeGreaterThan(4000); // ~5 seconds
+
+        // Wait a bit more
+        await Task.Delay(200);
+
+        // Act - Change to correct answer (response time should now be ~5.2 seconds)
         var result = await service.SubmitAnswerAsync(
             participant.Id,
             question.Id,
-            wrongAnswer.Id,
+            correctAnswer.Id,
             questionReleasedAt
         );
 
         // Assert
         result.Should().NotBeNull();
-        result!.IsCorrect.Should().BeFalse();
-        result.Score.Should().Be(0);
-        result.CorrectAnswerId.Should().Be(correctAnswer.Id);
+        result!.SelectedAnswerId.Should().Be(correctAnswer.Id);
+
+        // Verify answer was updated (not duplicated)
+        var answers = db.ParticipantAnswers.Where(a => a.ParticipantId == participant.Id && a.QuestionId == question.Id).ToList();
+        answers.Should().HaveCount(1);
+        answers[0].AnswerOptionId.Should().Be(correctAnswer.Id);
+        
+        // Verify response time was updated to the new click time
+        await db.Entry(originalAnswer).ReloadAsync();
+        originalAnswer.ResponseTimeMs.Should().BeGreaterThan(originalResponseTime);
     }
 
     [Fact]
-    public async Task SubmitAnswerAsync_WhenAlreadyAnswered_ReturnsNull()
+    public async Task SubmitAnswerAsync_WhenClickingSameAnswer_KeepsOriginalTime()
     {
         // Arrange
         using var db = TestDbContextFactory.Create();
@@ -143,12 +158,17 @@ public class ScoringServiceTests
 
         var question = quiz.Questions.First();
         var correctAnswer = question.AnswerOptions.First(a => a.IsCorrect);
-        var questionReleasedAt = DateTime.UtcNow;
+        var questionReleasedAt = DateTime.UtcNow.AddSeconds(-2);
 
         // Submit first answer
         await service.SubmitAnswerAsync(participant.Id, question.Id, correctAnswer.Id, questionReleasedAt);
+        var originalAnswer = db.ParticipantAnswers.First(a => a.ParticipantId == participant.Id);
+        var originalResponseTime = originalAnswer.ResponseTimeMs;
 
-        // Act - Try to submit again
+        // Wait a bit
+        await Task.Delay(100);
+
+        // Act - Click same answer again
         var result = await service.SubmitAnswerAsync(
             participant.Id,
             question.Id,
@@ -157,7 +177,12 @@ public class ScoringServiceTests
         );
 
         // Assert
-        result.Should().BeNull();
+        result.Should().NotBeNull();
+        result!.SelectedAnswerId.Should().Be(correctAnswer.Id);
+
+        // Verify response time was NOT updated
+        await db.Entry(originalAnswer).ReloadAsync();
+        originalAnswer.ResponseTimeMs.Should().Be(originalResponseTime);
     }
 
     [Fact]
@@ -204,6 +229,37 @@ public class ScoringServiceTests
     #endregion
 
     #region GetQuestionResultsAsync Tests
+
+    [Fact]
+    public async Task GetQuestionResultsAsync_CalculatesScoresAndUpdatesParticipants()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var (quiz, session, participant) = await TestDbContextFactory.SeedBasicSessionAsync(db);
+        var service = new ScoringService(db);
+
+        var question = quiz.Questions.First();
+        var correctAnswer = question.AnswerOptions.First(a => a.IsCorrect);
+        var questionReleasedAt = DateTime.UtcNow.AddMilliseconds(-500); // 500ms ago
+
+        // Submit answer (score not calculated yet)
+        await service.SubmitAnswerAsync(participant.Id, question.Id, correctAnswer.Id, questionReleasedAt);
+        
+        // Verify score is 0 before question closes
+        var answerBefore = db.ParticipantAnswers.First(a => a.ParticipantId == participant.Id);
+        answerBefore.Score.Should().Be(0);
+
+        // Act - Close question (get results)
+        var results = await service.GetQuestionResultsAsync(session.Id, question.Id);
+
+        // Assert - Score should now be calculated
+        results.Should().NotBeNull();
+        await db.Entry(answerBefore).ReloadAsync();
+        answerBefore.Score.Should().BeGreaterThan(900); // Fast correct answer
+
+        var updatedParticipant = await db.Participants.FindAsync(participant.Id);
+        updatedParticipant!.TotalScore.Should().Be(answerBefore.Score);
+    }
 
     [Fact]
     public async Task GetQuestionResultsAsync_ReturnsCorrectAnswerCounts()
@@ -295,6 +351,35 @@ public class ScoringServiceTests
         results.Leaderboard[0].Rank.Should().Be(1);
         results.Leaderboard[1].Name.Should().Be("Test Player");
         results.Leaderboard[1].Rank.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetQuestionResultsAsync_WhenAnswerChanged_UsesLastAnswerForResult()
+    {
+        // Arrange
+        using var db = TestDbContextFactory.Create();
+        var (quiz, session, participant) = await TestDbContextFactory.SeedBasicSessionAsync(db);
+        var service = new ScoringService(db);
+
+        var question = quiz.Questions.First();
+        var correctAnswer = question.AnswerOptions.First(a => a.IsCorrect);
+        var wrongAnswer = question.AnswerOptions.First(a => !a.IsCorrect);
+        var questionReleasedAt = DateTime.UtcNow;
+
+        // First submit wrong answer, then change to correct
+        await service.SubmitAnswerAsync(participant.Id, question.Id, wrongAnswer.Id, questionReleasedAt);
+        await service.SubmitAnswerAsync(participant.Id, question.Id, correctAnswer.Id, questionReleasedAt);
+
+        // Act
+        var results = await service.GetQuestionResultsAsync(session.Id, question.Id);
+
+        // Assert - Should count as correct (last answer)
+        results.Should().NotBeNull();
+        results!.AnswerCounts[correctAnswer.Id].Should().Be(1);
+        results.AnswerCounts[wrongAnswer.Id].Should().Be(0);
+
+        var updatedParticipant = await db.Participants.FindAsync(participant.Id);
+        updatedParticipant!.TotalScore.Should().BeGreaterThan(0); // Got points for correct answer
     }
 
     [Fact]

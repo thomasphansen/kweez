@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { quizHub } from '../services/signalr'
 import type {
   QuestionReleased,
-  AnswerResult,
   QuestionResults,
   LeaderboardEntry,
   SessionState,
@@ -26,7 +25,9 @@ interface SessionContextType {
   // Game state
   sessionState: SessionState | null
   currentQuestion: QuestionReleased | null
-  lastAnswerResult: AnswerResult | null
+  selectedAnswerId: string | null
+  lastQuestion: QuestionReleased | null  // Store last question for results display
+  lastSelectedAnswerId: string | null    // Store player's answer for results display
   questionResults: QuestionResults | null
   leaderboard: LeaderboardEntry[]
   isQuizEnded: boolean
@@ -71,11 +72,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Game state
   const [sessionState, setSessionState] = useState<SessionState | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState<QuestionReleased | null>(null)
-  const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(null)
+  const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null)
+  const [lastQuestion, setLastQuestion] = useState<QuestionReleased | null>(null)
+  const [lastSelectedAnswerId, setLastSelectedAnswerId] = useState<string | null>(null)
   const [questionResults, setQuestionResults] = useState<QuestionResults | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isQuizEnded, setIsQuizEnded] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
+  
+  // Refs to access current state in callbacks
+  const currentQuestionRef = useRef(currentQuestion)
+  currentQuestionRef.current = currentQuestion
+  const selectedAnswerIdRef = useRef(selectedAnswerId)
+  selectedAnswerIdRef.current = selectedAnswerId
 
   const isConnected = connectionStatus === 'connected'
 
@@ -117,7 +126,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const clearGameState = useCallback(() => {
     setCurrentQuestion(null)
-    setLastAnswerResult(null)
+    setSelectedAnswerId(null)
+    setLastQuestion(null)
+    setLastSelectedAnswerId(null)
     setQuestionResults(null)
     setLeaderboard([])
     setIsQuizEnded(false)
@@ -191,7 +202,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             answers: state.activeQuestion.answers,
           })
           setQuestionResults(null)
-          setLastAnswerResult(null)
+          setSelectedAnswerId(null)
           navigate('/play')
         } else if (isPlayerRouteRef.current && state.status === 'Finished') {
           // Quiz ended while disconnected
@@ -207,13 +218,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     unsubscribers.push(
       quizHub.on('SessionStarted', () => {
         setSessionState((prev) => prev ? { ...prev, status: 'Active' } : null)
+        // Navigate players to the started page
+        if (isPlayerRouteRef.current) {
+          navigate('/started')
+        }
       })
     )
 
     unsubscribers.push(
       quizHub.on('QuestionReleased', (question) => {
         setCurrentQuestion(question)
-        setLastAnswerResult(null)
+        setSelectedAnswerId(null)
         setQuestionResults(null)
         // Only navigate if this is a player (not admin)
         if (isPlayerRouteRef.current) {
@@ -223,15 +238,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     )
 
     unsubscribers.push(
-      quizHub.on('AnswerResult', (result) => {
-        setLastAnswerResult(result)
+      quizHub.on('AnswerSubmitted', (result) => {
+        setSelectedAnswerId(result.selectedAnswerId)
       })
     )
 
     unsubscribers.push(
       quizHub.on('QuestionClosed', (results) => {
+        // Save the current question and answer for results display
+        setLastQuestion(currentQuestionRef.current)
+        setLastSelectedAnswerId(selectedAnswerIdRef.current)
+        
         setQuestionResults(results)
         setCurrentQuestion(null)
+        setSelectedAnswerId(null)
         setLeaderboard(results.leaderboard)
         // Only navigate if this is a player (not admin)
         if (isPlayerRouteRef.current) {
@@ -294,7 +314,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setPlayerSession,
         sessionState,
         currentQuestion,
-        lastAnswerResult,
+        selectedAnswerId,
+        lastQuestion,
+        lastSelectedAnswerId,
         questionResults,
         leaderboard,
         isQuizEnded,

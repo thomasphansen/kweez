@@ -101,18 +101,15 @@ export const createTestLeaderboardEntry = (overrides: Partial<{
   ...overrides,
 })
 
-export const createTestAnswerResult = (overrides: Partial<{
-  isCorrect: boolean
-  score: number
-  responseTimeMs: number
-  correctAnswerId: string
+export const createTestAnswerSubmitted = (overrides: Partial<{
+  selectedAnswerId: string
 }> = {}) => ({
-  isCorrect: true,
-  score: 950,
-  responseTimeMs: 833,
-  correctAnswerId: 'a2',
+  selectedAnswerId: 'a2',
   ...overrides,
 })
+
+// Legacy helper for backwards compatibility in tests
+export const createTestAnswerResult = createTestAnswerSubmitted
 
 export const createTestQuestionResults = (overrides: Partial<{
   questionId: string

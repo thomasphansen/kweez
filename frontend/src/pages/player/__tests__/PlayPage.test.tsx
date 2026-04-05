@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from '@mui/material/styles'
 import { theme } from '../../../theme'
 import PlayPage from '../PlayPage'
-import { createTestQuestion, createTestAnswerResult } from '../../../test/utils'
+import { createTestQuestion } from '../../../test/utils'
 
 // Mock useNavigate
 const mockNavigate = vi.fn()
@@ -52,7 +52,7 @@ describe('PlayPage', () => {
     mockUseSession.mockReturnValue({
       playerSession: null,
       currentQuestion: null,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -70,7 +70,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: null,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -89,7 +89,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -108,7 +108,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -134,7 +134,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -156,7 +156,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -175,7 +175,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -187,7 +187,7 @@ describe('PlayPage', () => {
     expect(mockSubmitAnswer).toHaveBeenCalledWith('a2')
   })
 
-  it('should show "Answer submitted!" after clicking answer', () => {
+  it('should show "Tap another answer to change" when answer selected and time remaining', () => {
     const question = createTestQuestion()
     mockUseSession.mockReturnValue({
       playerSession: {
@@ -197,19 +197,16 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: 'a2', // Answer already selected
       submitAnswer: mockSubmitAnswer,
     })
     
     renderPlayPage()
     
-    const answerButton = screen.getByText('4')
-    fireEvent.click(answerButton)
-    
-    expect(screen.getByText('Answer submitted!')).toBeInTheDocument()
+    expect(screen.getByText('Tap another answer to change')).toBeInTheDocument()
   })
 
-  it('should disable all answers after one is selected', () => {
+  it('should allow changing answer while time remains', () => {
     const question = createTestQuestion()
     mockUseSession.mockReturnValue({
       playerSession: {
@@ -219,26 +216,22 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: 'a1', // First answer selected
       submitAnswer: mockSubmitAnswer,
     })
     
     renderPlayPage()
     
-    const answerButton = screen.getByText('4')
-    fireEvent.click(answerButton)
-    
-    // Try clicking another answer
-    const anotherButton = screen.getByText('3')
+    // Click a different answer
+    const anotherButton = screen.getByText('4')
     fireEvent.click(anotherButton)
     
-    // submitAnswer should only be called once
-    expect(mockSubmitAnswer).toHaveBeenCalledTimes(1)
+    // submitAnswer should be called for the new answer
+    expect(mockSubmitAnswer).toHaveBeenCalledWith('a2')
   })
 
-  it('should show correct answer result', () => {
+  it('should not show correct/wrong feedback on PlayPage', () => {
     const question = createTestQuestion()
-    const result = createTestAnswerResult({ isCorrect: true, score: 950 })
     mockUseSession.mockReturnValue({
       playerSession: {
         participantId: 'p1',
@@ -247,34 +240,15 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: result,
+      selectedAnswerId: 'a1',
       submitAnswer: mockSubmitAnswer,
     })
     
     renderPlayPage()
     
-    expect(screen.getByText('Correct!')).toBeInTheDocument()
-    expect(screen.getByText('+950 points')).toBeInTheDocument()
-  })
-
-  it('should show wrong answer result', () => {
-    const question = createTestQuestion()
-    const result = createTestAnswerResult({ isCorrect: false, score: 0 })
-    mockUseSession.mockReturnValue({
-      playerSession: {
-        participantId: 'p1',
-        sessionId: 's1',
-        quizTitle: 'Test Quiz',
-        playerName: 'John',
-      },
-      currentQuestion: question,
-      lastAnswerResult: result,
-      submitAnswer: mockSubmitAnswer,
-    })
-    
-    renderPlayPage()
-    
-    expect(screen.getByText('Wrong!')).toBeInTheDocument()
+    // These should NOT be present - results shown on ResultsPage now
+    expect(screen.queryByText('Correct!')).not.toBeInTheDocument()
+    expect(screen.queryByText('Wrong!')).not.toBeInTheDocument()
   })
 
   it('should render ConnectionStatus component', () => {
@@ -287,7 +261,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -306,7 +280,7 @@ describe('PlayPage', () => {
         playerName: 'John',
       },
       currentQuestion: question,
-      lastAnswerResult: null,
+      selectedAnswerId: null,
       submitAnswer: mockSubmitAnswer,
     })
     
@@ -320,5 +294,58 @@ describe('PlayPage', () => {
     })
     
     expect(screen.getByText('14s')).toBeInTheDocument()
+  })
+
+  it('should show "Waiting for results..." when time runs out', async () => {
+    const question = createTestQuestion({ timeLimitSeconds: 2 })
+    mockUseSession.mockReturnValue({
+      playerSession: {
+        participantId: 'p1',
+        sessionId: 's1',
+        quizTitle: 'Test Quiz',
+        playerName: 'John',
+      },
+      currentQuestion: question,
+      selectedAnswerId: 'a1',
+      submitAnswer: mockSubmitAnswer,
+    })
+    
+    renderPlayPage()
+    
+    // Advance timer past the time limit
+    await act(async () => {
+      vi.advanceTimersByTime(3000)
+    })
+    
+    expect(screen.getByText('Waiting for results...')).toBeInTheDocument()
+  })
+
+  it('should disable answers when time runs out', async () => {
+    const question = createTestQuestion({ timeLimitSeconds: 1 })
+    mockUseSession.mockReturnValue({
+      playerSession: {
+        participantId: 'p1',
+        sessionId: 's1',
+        quizTitle: 'Test Quiz',
+        playerName: 'John',
+      },
+      currentQuestion: question,
+      selectedAnswerId: null,
+      submitAnswer: mockSubmitAnswer,
+    })
+    
+    renderPlayPage()
+    
+    // Advance timer past the time limit
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+    })
+    
+    // Try to click an answer
+    const answerButton = screen.getByText('4')
+    fireEvent.click(answerButton)
+    
+    // submitAnswer should NOT be called
+    expect(mockSubmitAnswer).not.toHaveBeenCalled()
   })
 })

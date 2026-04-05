@@ -11,7 +11,7 @@ public interface IQuizHubClient
     Task PlayerLeft(Guid participantId);
     Task SessionStarted();
     Task QuestionReleased(QuestionReleasedDto question);
-    Task AnswerResult(AnswerResultDto result);
+    Task AnswerSubmitted(AnswerSubmittedDto result);
     Task QuestionClosed(QuestionResultsDto results);
     Task LeaderboardUpdated(List<LeaderboardEntryDto> leaderboard);
     Task QuizEnded(List<LeaderboardEntryDto> finalLeaderboard);
@@ -223,11 +223,11 @@ public class QuizHub : Hub<IQuizHubClient>
             return;
         }
 
-        // Send result back to player
-        await Clients.Caller.AnswerResult(result);
+        // Send confirmation back to player (without revealing correct answer)
+        await Clients.Caller.AnswerSubmitted(result);
 
-        _logger.LogInformation("Participant {ParticipantId} submitted answer for question {QuestionId}, correct: {IsCorrect}, score: {Score}",
-            participantId, request.QuestionId, result.IsCorrect, result.Score);
+        _logger.LogInformation("Participant {ParticipantId} submitted answer for question {QuestionId}",
+            participantId, request.QuestionId);
 
         // Check if all participants have answered - close question early if so
         var allAnswered = await _sessionService.HaveAllParticipantsAnsweredAsync(sessionId, request.QuestionId);

@@ -147,6 +147,12 @@ public record SubmitAnswerRequest(
     Guid AnswerOptionId
 );
 
+// Sent immediately when player submits/changes answer (no correct answer info)
+public record AnswerSubmittedDto(
+    Guid SelectedAnswerId
+);
+
+// Legacy - kept for compatibility but no longer sent during gameplay
 public record AnswerResultDto(
     bool IsCorrect,
     int Score,

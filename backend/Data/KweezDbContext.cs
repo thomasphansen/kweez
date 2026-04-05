@@ -84,11 +84,11 @@ public class KweezDbContext : DbContext
             entity.HasOne(e => e.Question)
                   .WithMany()
                   .HasForeignKey(e => e.QuestionId)
-                  .OnDelete(DeleteBehavior.Restrict);
+                  .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.AnswerOption)
                   .WithMany()
                   .HasForeignKey(e => e.AnswerOptionId)
-                  .OnDelete(DeleteBehavior.Restrict);
+                  .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => new { e.ParticipantId, e.QuestionId }).IsUnique();
         });
     }

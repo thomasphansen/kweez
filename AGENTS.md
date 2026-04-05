@@ -13,14 +13,39 @@ The system is optimized for:
 
 ---
 
+## Current Implementation Status
+
+### Completed Features
+
+#### Backend (ASP.NET Core .NET 10)
+- **Database**: PostgreSQL with Entity Framework Core
+- **Models**: Quiz, Question, AnswerOption, QuizSession, Participant, ParticipantAnswer
+- **Services**: QuizService, SessionService, ScoringService
+- **Controllers**: QuizzesController, SessionsController
+- **SignalR Hub**: QuizHub with real-time events
+- **Fixed Join Codes**: Quizzes can have permanent QR codes that work across sessions
+
+#### Frontend (React + TypeScript + MUI)
+- **Layout**: Header ("Kweez") and footer ("Kweez - © 2026 - Thomas Hansen") on all pages except print
+- **Player Pages**: JoinPage, WaitPage, StartedPage, PlayPage, ResultsPage, FinalPage
+- **Admin Pages**: AdminDashboard, QuizEditor, LiveControl, PrintQRCode
+- **Real-time**: SignalR integration via SessionContext
+- **Mobile-first**: Responsive design with large touch targets
+
+#### Infrastructure
+- **Docker Compose**: frontend, backend, postgres services
+- **Solution file**: `Kweez.slnx` (new XML format)
+
+---
+
 ## Core Concepts
 
 ### Roles
 
 - **Player**
-  - Joins via QR code
+  - Joins via QR code or join code
   - Enters name
-  - Answers questions
+  - Answers questions (can change answer until time runs out)
   - Sees score and rankings
 
 - **Administrator**
@@ -38,312 +63,308 @@ The system is optimized for:
 - **Frontend**
   - React + TypeScript
   - MUI (Material UI) with Material Design 3-inspired theming
+  - Vite for build tooling
 
 - **Backend**
   - ASP.NET Core (.NET 10)
   - SignalR for real-time communication
+  - Entity Framework Core
 
 - **Database**
   - PostgreSQL
 
 - **Infrastructure**
   - Docker + Docker Compose
-  - Reverse proxy (shared with Nextcloud, e.g., Caddy or Nginx)
 
 ---
 
-## System Components
+## Project Structure
 
-### 1. Frontend (React)
-
-Two main application modes:
-
-- **Player UI**
-- **Admin UI**
-
-Routing example:
-
-/join           → enter name  
-/wait           → waiting lobby  
-/play           → active question  
-/results        → interim results  
-/final          → final leaderboard  
-
-/admin          → dashboard  
-/admin/quiz     → CRUD quizzes  
-/admin/live     → control active session  
-
----
-
-### 2. Backend (ASP.NET Core)
-
-#### Responsibilities
-
-- REST API for:
-  - Quiz CRUD
-  - Session management
-  - Admin actions
-
-- SignalR Hub for:
-  - Real-time question broadcast
-  - Timer synchronization
-  - Answer submission
-  - Score updates
-  - Leaderboard updates
-
----
-
-### 3. Real-Time Layer (SignalR)
-
-**SignalR is the core of the system.**
-
-Events include:
-
-- PlayerJoined
-- QuestionReleased
-- AnswerSubmitted
-- QuestionClosed
-- ShowResults
-- LeaderboardUpdated
-- QuizEnded
-
-All timing must be **server-authoritative**.
-
----
-
-### 4. Database (PostgreSQL)
-
-Suggested schema:
-
-- quizzes
-- questions
-- answer_options
-- quiz_sessions
-- participants
-- participant_answers
-- score_snapshots
+```
+kweez/
+├── backend/
+│   ├── Controllers/
+│   │   ├── QuizzesController.cs
+│   │   └── SessionsController.cs
+│   ├── Data/
+│   │   └── KweezDbContext.cs
+│   ├── DTOs/
+│   │   └── DTOs.cs
+│   ├── Hubs/
+│   │   └── QuizHub.cs
+│   ├── Models/
+│   │   ├── Quiz.cs
+│   │   ├── Question.cs
+│   │   ├── AnswerOption.cs
+│   │   ├── QuizSession.cs
+│   │   ├── Participant.cs
+│   │   └── ParticipantAnswer.cs
+│   ├── Services/
+│   │   ├── QuizService.cs
+│   │   ├── SessionService.cs
+│   │   └── ScoringService.cs
+│   └── Migrations/
+├── backend.Tests/
+│   └── Services/
+│       ├── QuizServiceTests.cs
+│       ├── SessionServiceTests.cs
+│       └── ScoringServiceTests.cs
+├── frontend/
+│   └── src/
+│       ├── components/
+│       │   ├── Layout.tsx
+│       │   └── ConnectionStatus.tsx
+│       ├── context/
+│       │   └── SessionContext.tsx
+│       ├── pages/
+│       │   ├── player/
+│       │   │   ├── JoinPage.tsx
+│       │   │   ├── WaitPage.tsx
+│       │   │   ├── StartedPage.tsx
+│       │   │   ├── PlayPage.tsx
+│       │   │   ├── ResultsPage.tsx
+│       │   │   └── FinalPage.tsx
+│       │   └── admin/
+│       │       ├── AdminDashboard.tsx
+│       │       ├── QuizEditor.tsx
+│       │       ├── LiveControl.tsx
+│       │       └── PrintQRCode.tsx
+│       ├── services/
+│       │   ├── api.ts
+│       │   └── signalr.ts
+│       └── types/
+│           └── index.ts
+├── docker-compose.yml
+└── Kweez.slnx
+```
 
 ---
 
 ## Game Flow
 
-1. Player scans QR code → opens `/join`
-2. Player enters name → joins session
-3. Player waits in lobby
-4. Admin starts quiz
+1. Player scans QR code → opens `/join?code=XXXXXX`
+2. Player enters name → joins session → `/wait`
+3. Player waits in lobby (sees other players)
+4. Admin clicks "Start Quiz" → Players see `/started` ("Kweez has started!")
 5. For each question:
    - Admin releases question
-   - Server sets `released_at_utc`
-   - Question broadcast via SignalR
-   - Players answer within 15 seconds
-   - Server closes question automatically
-   - Results + leaderboard displayed
+   - Players see `/play` with 4 colored answer buttons
+   - Players can click/change answer until time runs out
+   - Server closes question automatically (or admin force-closes)
+   - Players see `/results` with correct answer highlighted
 6. After last question:
-   - Final leaderboard shown
+   - Admin clicks "Final Results"
+   - Players see `/final` with final leaderboard
 
 ---
 
 ## Scoring Rules
 
+```
 score = max(0, 1000 - elapsed_ms * 0.06)
-
+```
 
 Where:
-- `elapsed_ms` = server time difference between:
-  - question release
-  - answer submission
+- `elapsed_ms` = server time difference between question release and answer submission
+- **If player changes answer**: the time of the NEW answer is used for scoring
+- **If player clicks same answer again**: original time is kept
 
 Rules:
 - Only correct answers score points
 - All scoring happens on the server
-- Client timestamps must never be trusted
+- Score is calculated when question closes (not on submission)
+- Client timestamps are never trusted
 
 ---
 
-## Key Technical Principles
+## SignalR Events
 
-### 1. Server Authority
+### Server → Client
 
-- All timing is controlled by the backend
-- Clients are “dumb displays”
-- Prevents cheating and inconsistencies
+| Event | Payload | Description |
+|-------|---------|-------------|
+| SessionState | SessionState | Full session state (on join/reconnect) |
+| SessionStarted | - | Quiz has started |
+| PlayerJoined | Participant | New player joined |
+| QuestionReleased | QuestionReleased | New question to answer |
+| AnswerSubmitted | { selectedAnswerId } | Confirmation of answer selection |
+| QuestionClosed | QuestionResults | Question ended, shows results |
+| LeaderboardUpdated | LeaderboardEntry[] | Updated rankings |
+| QuizEnded | LeaderboardEntry[] | Final results |
+| Error | string | Error message |
 
----
+### Client → Server
 
-### 2. Real-Time First
-
-- SignalR is not optional
-- Do not poll for updates
-- All state transitions are event-driven
-
----
-
-### 3. Stateless Frontend
-
-- Frontend should not hold critical game state
-- Reconnect must be supported:
-  - Player identity stored in localStorage
-  - Session restored on reconnect
-
----
-
-### 4. Simplicity Over Features
-
-This is an event app, not a SaaS platform.
-
-Avoid:
-- Authentication systems
-- Multi-tenancy
-- Complex permissions
-- Over-engineering
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| JoinSession | participantId | Player joins session |
+| JoinAsAdmin | sessionId | Admin joins to control |
+| SubmitAnswer | participantId, questionId, answerId | Submit/change answer |
+| StartQuiz | sessionId | Start the quiz |
+| ReleaseNextQuestion | sessionId | Show next question |
+| ForceCloseQuestion | sessionId | End question early |
+| EndQuiz | sessionId | End quiz, show final results |
 
 ---
 
-## Frontend Guidelines
+## Database Schema
 
-### UI Framework
+### Tables
 
-Use:
-- MUI (Material UI)
+- **Quizzes**: id, title, description, fixedJoinCode?, createdAtUtc
+- **Questions**: id, quizId, text, timeLimitSeconds, orderIndex
+- **AnswerOptions**: id, questionId, text, isCorrect, orderIndex
+- **QuizSessions**: id, quizId, joinCode, status, startedAtUtc?, endedAtUtc?
+- **Participants**: id, sessionId, name, totalScore, joinedAtUtc, isConnected
+- **ParticipantAnswers**: id, participantId, questionId, answerOptionId, submittedAtUtc, responseTimeMs, score
 
-Design style:
-- Follow Material Design 3 principles (color, spacing, shapes)
-- Do not attempt full MD3 compliance
+### Key Constraints
 
----
-
-### UX Requirements
-
-- Mobile-first design
-- Large tap targets
-- Minimal text input
-- Clear feedback (correct/wrong answers)
-- Smooth transitions between states
+- QuizSession.JoinCode: unique, varchar(10)
+- ParticipantAnswer: unique index on (participantId, questionId)
+- Cascade deletes: Quiz → Questions → AnswerOptions
+- Cascade deletes: Question/AnswerOption → ParticipantAnswers
 
 ---
 
-### Important Screens
+## Key Implementation Details
 
-- Join screen
-- Waiting lobby
-- Question screen (4 large buttons)
-- Results screen
-- Leaderboard screen
+### Fixed Join Codes
+- Quizzes can have a `fixedJoinCode` for permanent QR codes
+- When creating a new session, if the quiz has a fixed code:
+  - Old sessions with that code get their code changed to "X" + random suffix
+  - New session gets the fixed code
+- PrintQRCode page generates 8 printable QR code cards per A4 page
 
----
+### Answer Changing
+- Players can change their answer until time runs out or question closes
+- Only one ParticipantAnswer record per player per question
+- Changing answer updates both `answerOptionId` AND `responseTimeMs`
+- Clicking same answer again is ignored (keeps original time)
 
-## Backend Guidelines
+### Results Display
+- Correct answer: green border with glow effect
+- Wrong answers: darkened (40% mix with black)
+- Player's selection: check/X icon overlay (green or red)
 
-### API Design
-
-- REST for admin/data operations
-- SignalR for live gameplay
-
-### Example Controllers
-
-- QuizController
-- SessionController
-- AdminController
-
-### SignalR Hub
-
-- QuizHub
+### Layout
+- All pages (except PrintQRCode) have header and footer
+- Content area is scrollable, fits within viewport
+- Mobile-responsive with larger buttons on small screens
 
 ---
 
-### Concurrency Considerations
+## UI/UX Details
 
-- Multiple players answering simultaneously
-- Use efficient inserts (batching if needed)
-- Avoid locking where possible
+### Answer Colors
+```typescript
+const answerColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c']
+// Red, Blue, Yellow, Green
+```
 
----
+### Player Flow States
+1. `/join` - Enter name with join code
+2. `/wait` - Lobby, see other players
+3. `/started` - "Kweez has started!" transition screen
+4. `/play` - Answer question (can change selection)
+5. `/results` - See correct answer and leaderboard
+6. `/final` - Final standings
 
-## Deployment
-
-### Docker Services
-
-- frontend
-- backend
-- postgres
-- reverse-proxy
-
-### Requirements
-
-- Single machine (home server)
-- HTTPS enabled (via reverse proxy)
-- Accessible via local network or internet
-
----
-
-## QR Code Entry
-
-Players join via QR code pointing to:
-
-https://your-domain/join?session=<sessionId>
-
-Notes:
-- Do NOT use barcodes
-- QR code must be easily scannable from distance
+### Admin Live Control
+- Shows QR code while waiting
+- "Start Quiz" button (disabled until players join)
+- "First Question" → "Next Question" → "Final Results" button progression
+- "Force Close Question" to end early
+- "End Quiz" with confirmation dialog
 
 ---
 
-## Non-Goals (Important)
+## Testing
 
-This project intentionally does NOT include:
+### Backend Tests (76 tests)
+- QuizServiceTests: CRUD operations
+- SessionServiceTests: Session lifecycle, state management
+- ScoringServiceTests: Score calculation, answer changing
 
-- User accounts
-- Persistent player profiles
-- Public quiz sharing
-- Payments or monetization
-- Complex analytics
+### Frontend Tests (75 tests)
+- SignalR service tests
+- SessionContext tests
+- Component tests (PlayPage, WaitPage, ConnectionStatus)
+
+### Running Tests
+```bash
+# Backend
+cd backend && dotnet test
+
+# Frontend
+cd frontend && npm test
+```
 
 ---
 
-## Future Enhancements (Optional)
+## Development Commands
 
-- Images in questions
-- Sound effects
-- Animated leaderboard
-- Team mode
-- Export/import quizzes
+### Backend
+```bash
+# Run with watch
+cd backend && dotnet watch run
+
+# Add migration
+dotnet ef migrations add MigrationName
+
+# Update database
+dotnet ef database update
+```
+
+### Frontend
+```bash
+# Development server
+cd frontend && npm run dev
+
+# Build
+npm run build
+
+# Type check
+npm run typecheck
+```
+
+### Docker
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Rebuild
+docker compose up -d --build
+```
+
+---
+
+## Known Quirks
+
+1. **EF Core InMemory provider**: When replacing child collections, must delete and save first, then add new items in separate save.
+
+2. **Fixed QR code replay**: Join codes have unique constraint, so when reusing fixed codes, old sessions get code changed to "X" + random suffix.
+
+3. **Print page**: Uses internal padding (10mm) instead of @page margins for better cross-browser print support.
 
 ---
 
 ## Coding Conventions
 
 ### Backend
-
 - Use async/await everywhere
 - Use DI (built-in ASP.NET Core)
 - Keep controllers thin, move logic to services
+- Solution file: `Kweez.slnx` (new XML format)
 
 ### Frontend
-
-- Functional components
-- Hooks-based architecture
-- Keep components small and reusable
-
----
-
-## Testing Strategy
-
-- Manual testing is acceptable for MVP
-- Focus on:
-  - Timing correctness
-  - Score calculation
-  - Reconnection behavior
-
----
-
-## Risks & Mitigations
-
-| Risk | Mitigation |
-|------|-----------|
-| Wi-Fi instability | Keep payloads small, retry connections |
-| Users joining twice | Use session tokens |
-| Duplicate names | Warn or allow but distinguish internally |
-| Admin mistakes | Add confirmation before advancing |
+- Functional components with hooks
+- SessionContext for all game state
+- MUI components with sx prop for styling
+- Responsive breakpoints: xs (mobile), sm (tablet+)
 
 ---
 
@@ -353,7 +374,8 @@ kweez is a focused, real-time quiz system built for live experiences.
 
 The most critical aspects are:
 - Reliable real-time communication (SignalR)
-- Server-controlled timing
+- Server-controlled timing and scoring
 - Simple, responsive mobile UI
+- Answer changing allowed until question closes
 
 Everything else is secondary.
