@@ -10,10 +10,12 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 import { sessionApi } from '../../services/api'
 import { useSession } from '../../context/SessionContext'
 
 export default function JoinPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { setPlayerSession, connect, joinSession, clearGameState } = useSession()
@@ -32,10 +34,10 @@ export default function JoinPage() {
       sessionApi.getByCode(code).then((session) => {
         setQuizTitle(session.quizTitle)
       }).catch(() => {
-        setError('Invalid session code')
+        setError(t('join.invalidSessionCode'))
       })
     }
-  }, [searchParams])
+  }, [searchParams, t])
 
   const handleCodeChange = async (code: string) => {
     const upperCode = code.toUpperCase().slice(0, 6)
@@ -48,7 +50,7 @@ export default function JoinPage() {
         const session = await sessionApi.getByCode(upperCode)
         setQuizTitle(session.quizTitle)
       } catch {
-        setError('Session not found')
+        setError(t('join.sessionNotFound'))
       }
     }
   }
@@ -79,7 +81,7 @@ export default function JoinPage() {
       // Navigate to waiting room
       navigate('/wait')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to join')
+      setError(err instanceof Error ? err.message : t('join.failedToJoin'))
     } finally {
       setLoading(false)
     }
@@ -89,10 +91,10 @@ export default function JoinPage() {
     <Container maxWidth="sm" sx={{ py: 4 }}>
       <Box sx={{ textAlign: 'center', mb: 4 }}>
         <Typography variant="h2" component="h1" gutterBottom>
-          kweez
+          {t('join.title')}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Join the quiz!
+          {t('join.subtitle')}
         </Typography>
       </Box>
 
@@ -100,10 +102,10 @@ export default function JoinPage() {
         <Box component="form" onSubmit={(e) => { e.preventDefault(); handleJoin(); }}>
           <TextField
             fullWidth
-            label="Game PIN"
+            label={t('join.gamePinLabel')}
             value={joinCode}
             onChange={(e) => handleCodeChange(e.target.value)}
-            placeholder="Enter 6-character code"
+            placeholder={t('join.gamePinPlaceholder')}
             inputProps={{ 
               maxLength: 6,
               style: { 
@@ -118,16 +120,16 @@ export default function JoinPage() {
 
           {quizTitle && (
             <Alert severity="success" sx={{ mb: 2 }}>
-              Quiz: {quizTitle}
+              {t('join.quizFound', { title: quizTitle })}
             </Alert>
           )}
 
           <TextField
             fullWidth
-            label="Your Name"
+            label={t('join.yourNameLabel')}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
+            placeholder={t('join.yourNamePlaceholder')}
             inputProps={{ maxLength: 50 }}
             sx={{ mb: 3 }}
           />
@@ -145,7 +147,7 @@ export default function JoinPage() {
             onClick={handleJoin}
             disabled={!joinCode || !name.trim() || loading || !!error}
           >
-            {loading ? <CircularProgress size={24} /> : 'Join Game'}
+            {loading ? <CircularProgress size={24} /> : t('join.joinGame')}
           </Button>
         </Box>
       </Paper>

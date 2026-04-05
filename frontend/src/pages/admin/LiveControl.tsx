@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Container,
@@ -31,6 +32,7 @@ import { quizHub } from '../../services/signalr'
 import type { Session, SessionState, QuestionReleased, QuestionResults, LeaderboardEntry } from '../../types'
 
 export default function LiveControl() {
+  const { t } = useTranslation()
   const { sessionId } = useParams()
   const navigate = useNavigate()
 
@@ -81,6 +83,7 @@ export default function LiveControl() {
       } catch (err) {
         if (!cancelled && isMountedRef.current) {
           console.error('SignalR connection error:', err)
+          // Note: t() is not available in init(), error will be set generically
           setError('Failed to connect to real-time updates')
         }
       }
@@ -176,7 +179,7 @@ export default function LiveControl() {
     try {
       await quizHub.startQuiz(sessionId)
     } catch (err) {
-      setError('Failed to start quiz')
+      setError(t('liveControl.failedToStartQuiz'))
     }
   }
 
@@ -185,7 +188,7 @@ export default function LiveControl() {
     try {
       await quizHub.releaseNextQuestion(sessionId)
     } catch (err) {
-      setError('Failed to release question')
+      setError(t('liveControl.failedToReleaseQuestion'))
     }
   }
 
@@ -194,7 +197,7 @@ export default function LiveControl() {
     try {
       await quizHub.forceCloseQuestion(sessionId)
     } catch (err) {
-      setError('Failed to close question')
+      setError(t('liveControl.failedToCloseQuestion'))
     }
   }
 
@@ -204,7 +207,7 @@ export default function LiveControl() {
     try {
       await quizHub.endQuiz(sessionId)
     } catch (err) {
-      setError('Failed to end quiz')
+      setError(t('liveControl.failedToEndQuiz'))
     }
   }
 
@@ -219,9 +222,9 @@ export default function LiveControl() {
   if (!session) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Alert severity="error">Session not found</Alert>
+        <Alert severity="error">{t('liveControl.sessionNotFound')}</Alert>
         <Button onClick={() => navigate('/admin')} sx={{ mt: 2 }}>
-          Back to Dashboard
+          {t('liveControl.backToDashboard')}
         </Button>
       </Container>
     )
@@ -247,10 +250,10 @@ export default function LiveControl() {
           startIcon={<TvIcon />}
           onClick={() => window.open(`/display/${sessionId}`, '_blank')}
         >
-          Open Display
+          {t('liveControl.openDisplay')}
         </Button>
         <Chip
-          label={isConnected ? 'Connected' : 'Disconnected'}
+          label={isConnected ? t('common.connected') : t('common.disconnected')}
           color={isConnected ? 'success' : 'error'}
           size="small"
         />
@@ -273,7 +276,7 @@ export default function LiveControl() {
           {isWaiting && (
             <Paper sx={{ p: 4, textAlign: 'center', mb: 4 }}>
               <Typography variant="h5" gutterBottom>
-                Join Code: <strong>{session.joinCode}</strong>
+                {t('liveControl.joinCode', { code: session.joinCode })}
               </Typography>
               <Box sx={{ my: 3, display: 'flex', justifyContent: 'center' }}>
                 <QRCodeSVG value={joinUrl} size={250} />
@@ -288,7 +291,7 @@ export default function LiveControl() {
           {currentQuestion && (
             <Paper sx={{ p: 4, mb: 4 }}>
               <Typography variant="overline">
-                Question {currentQuestion.questionIndex + 1} of {currentQuestion.totalQuestions}
+                {t('liveControl.currentQuestion', { current: currentQuestion.questionIndex + 1, total: currentQuestion.totalQuestions })}
               </Typography>
               <Typography variant="h5" sx={{ my: 2 }}>
                 {currentQuestion.text}
@@ -301,7 +304,7 @@ export default function LiveControl() {
                 ))}
               </List>
               <Typography variant="body2" color="text.secondary">
-                Time limit: {currentQuestion.timeLimitSeconds} seconds
+                {t('liveControl.timeLimit', { seconds: currentQuestion.timeLimitSeconds })}
               </Typography>
             </Paper>
           )}
@@ -310,10 +313,10 @@ export default function LiveControl() {
           {questionResults && !currentQuestion && (
             <Paper sx={{ p: 4, mb: 4 }}>
               <Typography variant="h5" gutterBottom>
-                Question {questionResults.questionIndex + 1} Results
+                {t('liveControl.questionResultsTitle', { number: questionResults.questionIndex + 1 })}
               </Typography>
               <Typography variant="body1" color="text.secondary" gutterBottom>
-                Answer distribution shown. Ready for next question.
+                {t('liveControl.answerDistribution')}
               </Typography>
             </Paper>
           )}
@@ -321,7 +324,7 @@ export default function LiveControl() {
           {/* Controls */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Controls
+              {t('liveControl.controls')}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               {isWaiting && (
@@ -332,7 +335,7 @@ export default function LiveControl() {
                   onClick={handleStartQuiz}
                   disabled={participants.length === 0}
                 >
-                  Start Quiz
+                  {t('liveControl.startQuiz')}
                 </Button>
               )}
 
@@ -343,7 +346,7 @@ export default function LiveControl() {
                   startIcon={<StopIcon />}
                   onClick={() => setShowEndConfirm(true)}
                 >
-                  Cancel Session
+                  {t('liveControl.cancelSession')}
                 </Button>
               )}
 
@@ -354,10 +357,10 @@ export default function LiveControl() {
                   onClick={handleNextQuestion}
                 >
                   {!questionResults 
-                    ? 'First Question' 
+                    ? t('liveControl.firstQuestion')
                     : questionResults.questionIndex + 1 >= (sessionState?.totalQuestions || 0)
-                      ? 'Final Results'
-                      : 'Next Question'}
+                      ? t('liveControl.finalResults')
+                      : t('liveControl.nextQuestion')}
                 </Button>
               )}
 
@@ -366,7 +369,7 @@ export default function LiveControl() {
                   variant="outlined"
                   onClick={handleForceClose}
                 >
-                  Force Close Question
+                  {t('liveControl.forceCloseQuestion')}
                 </Button>
               )}
 
@@ -377,7 +380,7 @@ export default function LiveControl() {
                   startIcon={<StopIcon />}
                   onClick={() => setShowEndConfirm(true)}
                 >
-                  End Quiz
+                  {t('liveControl.endQuiz')}
                 </Button>
               )}
 
@@ -386,7 +389,7 @@ export default function LiveControl() {
                   variant="contained"
                   onClick={() => navigate('/admin')}
                 >
-                  Back to Dashboard
+                  {t('liveControl.backToDashboard')}
                 </Button>
               )}
             </Box>
@@ -398,7 +401,7 @@ export default function LiveControl() {
           {/* Participants/Leaderboard */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              {isWaiting ? 'Players' : 'Leaderboard'} ({participants.length})
+              {isWaiting ? t('liveControl.playersLeaderboard') : t('results.leaderboard')} ({participants.length})
             </Typography>
             <List dense>
               {(isWaiting ? participants : leaderboard.length > 0 ? leaderboard.map(l => ({
@@ -415,11 +418,11 @@ export default function LiveControl() {
                   )}
                   <ListItemText
                     primary={p.name}
-                    secondary={!isWaiting ? `${p.totalScore} pts` : undefined}
+                    secondary={!isWaiting ? `${p.totalScore} ${t('common.pts')}` : undefined}
                   />
                   {isWaiting && (
                     <Chip
-                      label={p.isConnected ? 'Online' : 'Offline'}
+                      label={p.isConnected ? t('common.online') : t('common.offline')}
                       size="small"
                       color={p.isConnected ? 'success' : 'default'}
                     />
@@ -429,7 +432,7 @@ export default function LiveControl() {
             </List>
             {participants.length === 0 && (
               <Typography color="text.secondary" align="center">
-                Waiting for players to join...
+                {t('liveControl.waitingForPlayers')}
               </Typography>
             )}
           </Paper>
@@ -439,21 +442,21 @@ export default function LiveControl() {
       {/* Confirmation Dialog */}
       <Dialog open={showEndConfirm} onClose={() => setShowEndConfirm(false)}>
         <DialogTitle>
-          {isWaiting ? 'Cancel Session?' : 'End Quiz?'}
+          {isWaiting ? t('liveControl.cancelSessionTitle') : t('liveControl.endQuizTitle')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
             {isWaiting
-              ? 'This will cancel the session. All players will be disconnected.'
-              : 'This will end the quiz immediately. Players will see the final leaderboard.'}
+              ? t('liveControl.cancelSessionMessage')
+              : t('liveControl.endQuizMessage')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowEndConfirm(false)}>
-            Go Back
+            {t('common.goBack')}
           </Button>
           <Button onClick={handleEndQuiz} color="error" variant="contained">
-            {isWaiting ? 'Cancel Session' : 'End Quiz'}
+            {isWaiting ? t('liveControl.cancelSession') : t('liveControl.endQuiz')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Container,
@@ -31,6 +32,7 @@ import { quizApi, sessionApi } from '../../services/api'
 import type { Quiz, Session } from '../../types'
 
 export default function AdminDashboard() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [quizzes, setQuizzes] = useState<Quiz[]>([])
   const [activeSessions, setActiveSessions] = useState<Session[]>([])
@@ -113,14 +115,14 @@ export default function AdminDashboard() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h3" gutterBottom>
-        Admin Dashboard
+        {t('admin.dashboard')}
       </Typography>
 
       {/* Active Sessions */}
       {activeSessions.length > 0 && (
         <Paper sx={{ p: 3, mb: 4, bgcolor: 'primary.dark' }}>
           <Typography variant="h5" gutterBottom>
-            Active Sessions
+            {t('admin.activeSessions')}
           </Typography>
           <List>
             {activeSessions.map((session) => (
@@ -155,20 +157,20 @@ export default function AdminDashboard() {
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5">
-            Quizzes
+            {t('admin.quizzes')}
           </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setDialogOpen(true)}
           >
-            New Quiz
+            {t('admin.newQuiz')}
           </Button>
         </Box>
 
         {quizzes.length === 0 ? (
           <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-            No quizzes yet. Create your first quiz!
+            {t('admin.noQuizzesYet')}
           </Typography>
         ) : (
           <List>
@@ -182,7 +184,7 @@ export default function AdminDashboard() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       {quiz.title}
                       {quiz.fixedJoinCode && (
-                        <Tooltip title={`Fixed code: ${quiz.fixedJoinCode}`}>
+                        <Tooltip title={t('admin.fixedCode', { code: quiz.fixedJoinCode })}>
                           <Chip
                             icon={<QrCodeIcon />}
                             label={quiz.fixedJoinCode}
@@ -194,13 +196,13 @@ export default function AdminDashboard() {
                       )}
                     </Box>
                   }
-                  secondary={`${quiz.questionCount} questions`}
+                  secondary={t('admin.questionsCount', { count: quiz.questionCount })}
                 />
                 <ListItemSecondaryAction>
                   <IconButton 
                     color="primary"
                     onClick={() => handleStartSession(quiz.id)}
-                    title="Start Session"
+                    title={t('admin.startSession')}
                   >
                     <PlayArrowIcon />
                   </IconButton>
@@ -208,21 +210,21 @@ export default function AdminDashboard() {
                     <IconButton
                       color="secondary"
                       onClick={() => window.open(`/admin/quiz/${quiz.id}/print`, '_blank')}
-                      title="Print QR Codes"
+                      title={t('admin.printQrCodes')}
                     >
                       <PrintIcon />
                     </IconButton>
                   )}
                   <IconButton 
                     onClick={() => navigate(`/admin/quiz/${quiz.id}`)}
-                    title="Edit"
+                    title={t('admin.edit')}
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton 
                     color="error"
                     onClick={() => setDeleteId(quiz.id)}
-                    title="Delete"
+                    title={t('common.delete')}
                   >
                     <DeleteIcon />
                   </IconButton>
@@ -244,12 +246,12 @@ export default function AdminDashboard() {
 
       {/* New Quiz Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Quiz</DialogTitle>
+        <DialogTitle>{t('admin.createNewQuiz')}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             fullWidth
-            label="Quiz Title"
+            label={t('admin.quizTitle')}
             value={newQuizTitle}
             onChange={(e) => setNewQuizTitle(e.target.value)}
             sx={{ mt: 2, mb: 2 }}
@@ -258,35 +260,35 @@ export default function AdminDashboard() {
             fullWidth
             multiline
             rows={3}
-            label="Description (optional)"
+            label={t('admin.descriptionOptional')}
             value={newQuizDescription}
             onChange={(e) => setNewQuizDescription(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button 
             variant="contained" 
             onClick={handleCreateQuiz}
             disabled={!newQuizTitle.trim()}
           >
-            Create
+            {t('common.create')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteId} onClose={() => setDeleteId(null)}>
-        <DialogTitle>Delete Quiz?</DialogTitle>
+        <DialogTitle>{t('admin.deleteQuiz')}</DialogTitle>
         <DialogContent>
           <Typography>
-            This will permanently delete the quiz and all its questions. This action cannot be undone.
+            {t('admin.deleteQuizConfirm')}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteId(null)}>Cancel</Button>
+          <Button onClick={() => setDeleteId(null)}>{t('common.cancel')}</Button>
           <Button color="error" variant="contained" onClick={handleDeleteQuiz}>
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

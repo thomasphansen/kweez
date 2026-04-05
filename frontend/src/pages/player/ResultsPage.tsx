@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Box, Typography, Paper, List, ListItem, ListItemText, Chip, Grid, Button } from '@mui/material'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import CheckIcon from '@mui/icons-material/Check'
@@ -9,6 +10,7 @@ import { answerColors } from '../../theme'
 import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function ResultsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { playerSession, questionResults, lastQuestion, lastSelectedAnswerId, leaderboard } = useSession()
 
@@ -31,7 +33,7 @@ export default function ResultsPage() {
       <Box sx={{ height: '100%', overflow: 'auto', p: 2 }}>
         <Box sx={{ maxWidth: 'sm', mx: 'auto' }}>
           <Typography variant="h5" align="center" gutterBottom>
-            Question {questionResults.questionIndex + 1} Results
+            {t('results.questionResults', { number: questionResults.questionIndex + 1 })}
           </Typography>
 
           {/* Correct/Wrong feedback */}
@@ -52,12 +54,12 @@ export default function ResultsPage() {
                   <CloseIcon fontSize="large" />
                 )}
                 <Typography variant="h5">
-                  {isCorrect ? 'Correct!' : 'Wrong!'}
+                  {isCorrect ? t('results.correct') : t('results.wrong')}
                 </Typography>
               </Box>
               {myEntry?.lastQuestionScore !== undefined && myEntry.lastQuestionScore > 0 && (
                 <Typography variant="h6">
-                  +{myEntry.lastQuestionScore} points
+                  {t('results.plusPoints', { points: myEntry.lastQuestionScore })}
                 </Typography>
               )}
             </Paper>
@@ -144,12 +146,12 @@ export default function ResultsPage() {
           {/* My score */}
           {myEntry && (
             <Paper sx={{ p: 2, mb: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'primary.contrastText' }}>
-              <Typography variant="body1">Your Position</Typography>
+              <Typography variant="body1">{t('results.yourPosition')}</Typography>
               <Typography variant="h3" sx={{ my: 0.5 }}>
                 #{myEntry.rank}
               </Typography>
               <Typography variant="h6">
-                {myEntry.totalScore} points
+                {myEntry.totalScore} {t('common.points')}
               </Typography>
             </Paper>
           )}
@@ -157,7 +159,7 @@ export default function ResultsPage() {
           {/* Leaderboard */}
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle1" gutterBottom>
-              Leaderboard
+              {t('results.leaderboard')}
             </Typography>
             <List dense disablePadding>
               {leaderboard.slice(0, 5).map((entry) => (
@@ -199,7 +201,7 @@ export default function ResultsPage() {
                       {entry.totalScore}
                     </Typography>
                     {entry.participantId === playerSession.participantId && (
-                      <Chip label="You" size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
+                      <Chip label={t('common.you')} size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem' }} />
                     )}
                   </Box>
                 </ListItem>
@@ -208,7 +210,7 @@ export default function ResultsPage() {
           </Paper>
 
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2, pb: 1 }}>
-            Waiting for next question...
+            {t('results.waitingForNextQuestion')}
           </Typography>
         </Box>
       </Box>

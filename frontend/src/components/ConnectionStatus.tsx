@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { Box, Typography, CircularProgress, Fade } from '@mui/material'
 import WifiOffIcon from '@mui/icons-material/WifiOff'
 import { useSession } from '../context/SessionContext'
 
 export default function ConnectionStatus() {
+  const { t } = useTranslation()
   const { connectionStatus } = useSession()
 
   // Only show overlay when disconnected or reconnecting
@@ -30,20 +32,20 @@ export default function ConnectionStatus() {
           <>
             <CircularProgress size={64} sx={{ color: 'primary.main' }} />
             <Typography variant="h5" color="white">
-              Reconnecting...
+              {t('connection.reconnecting')}
             </Typography>
             <Typography variant="body1" color="grey.400">
-              Please wait while we restore your connection
+              {t('connection.pleaseWait')}
             </Typography>
           </>
         ) : (
           <>
             <WifiOffIcon sx={{ fontSize: 64, color: 'error.main' }} />
             <Typography variant="h5" color="white">
-              Connection Lost
+              {t('connection.connectionLost')}
             </Typography>
             <Typography variant="body1" color="grey.400">
-              Trying to reconnect...
+              {t('connection.tryingToReconnect')}
             </Typography>
             <CircularProgress size={32} sx={{ color: 'grey.500', mt: 2 }} />
           </>

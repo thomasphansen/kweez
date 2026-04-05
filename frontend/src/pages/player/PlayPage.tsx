@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, LinearProgress, Grid, Button } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 import { useSession } from '../../context/SessionContext'
 import { answerColors } from '../../theme'
 import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function PlayPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { playerSession, currentQuestion, selectedAnswerId, submitAnswer } = useSession()
   
@@ -58,7 +60,7 @@ export default function PlayPage() {
       {/* Header */}
       <Box sx={{ mb: 2, flexShrink: 0 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Question {currentQuestion.questionIndex + 1} of {currentQuestion.totalQuestions}
+          {t('play.questionOf', { current: currentQuestion.questionIndex + 1, total: currentQuestion.totalQuestions })}
         </Typography>
         <LinearProgress 
           variant="determinate" 
@@ -73,10 +75,10 @@ export default function PlayPage() {
           }}
         />
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-          <Typography variant="h6">{timeLeft}s</Typography>
+          <Typography variant="h6">{t('play.timeLeft', { time: timeLeft })}</Typography>
           {hasAnswered && (
             <Typography variant="body2" color="text.secondary">
-              {timeLeft > 0 ? 'Tap another answer to change' : 'Answer submitted!'}
+              {timeLeft > 0 ? t('play.tapToChange') : t('play.answerSubmitted')}
             </Typography>
           )}
         </Box>
@@ -142,7 +144,7 @@ export default function PlayPage() {
             align="center" 
             sx={{ mt: 2, flexShrink: 0 }}
           >
-            Waiting for results...
+            {t('play.waitingForResults')}
           </Typography>
         )}
       </Box>

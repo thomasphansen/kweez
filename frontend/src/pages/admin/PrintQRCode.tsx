@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { QRCodeSVG } from 'qrcode.react'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import { quizApi } from '../../services/api'
 
 export default function PrintQRCode() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const [quizTitle, setQuizTitle] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -23,13 +25,13 @@ export default function PrintQRCode() {
     try {
       const quiz = await quizApi.getById(quizId)
       if (!quiz.fixedJoinCode) {
-        setError('This quiz does not have a fixed QR code')
+        setError(t('print.noFixedQrCode'))
         return
       }
       setQuizTitle(quiz.title)
       setJoinCode(quiz.fixedJoinCode)
     } catch (err) {
-      setError('Failed to load quiz')
+      setError(t('print.failedToLoadQuiz'))
     } finally {
       setLoading(false)
     }
@@ -207,7 +209,7 @@ export default function PrintQRCode() {
                   lineHeight: 1.2,
                 }}
               >
-                Have fun!
+                {t('print.haveFun')}
               </Typography>
             </Box>
           ))}

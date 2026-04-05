@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Typography,
@@ -27,6 +28,7 @@ const API_URL = import.meta.env.VITE_API_URL || ''
 type DisplayState = 'loading' | 'no-session' | 'waiting' | 'started' | 'question' | 'results' | 'final'
 
 export default function DisplayPage() {
+  const { t } = useTranslation()
   const { sessionId } = useParams()
 
   const [displayState, setDisplayState] = useState<DisplayState>('loading')
@@ -222,10 +224,10 @@ export default function DisplayPage() {
     return (
       <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', p: 4 }}>
         <Typography variant="h2" gutterBottom color="text.secondary">
-          {error || 'No Active Game'}
+          {error || t('display.noActiveGame')}
         </Typography>
         <Typography variant="h5" color="text.secondary">
-          Waiting for a quiz session to start...
+          {t('display.waitingForSession')}
         </Typography>
       </Box>
     )
@@ -243,7 +245,7 @@ export default function DisplayPage() {
           {/* QR Code */}
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="h4" gutterBottom>
-              Join Code: <strong>{session?.joinCode}</strong>
+              {t('display.joinCodeLabel', { code: session?.joinCode })}
             </Typography>
             <Box sx={{ my: 3 }}>
               <QRCodeSVG value={joinUrl} size={300} />
@@ -256,7 +258,7 @@ export default function DisplayPage() {
           {/* Players list */}
           <Paper sx={{ p: 4, minWidth: 300, maxHeight: '60vh', overflow: 'auto' }}>
             <Typography variant="h4" gutterBottom>
-              Players ({participants.length})
+              {t('display.playersCount', { count: participants.length })}
             </Typography>
             <List>
               {participants.map((p) => (
@@ -269,7 +271,7 @@ export default function DisplayPage() {
               ))}
               {participants.length === 0 && (
                 <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  Waiting for players to join...
+                  {t('display.waitingForPlayersJoin')}
                 </Typography>
               )}
             </List>
@@ -308,7 +310,7 @@ export default function DisplayPage() {
           </Box>
 
           <Typography variant="h2" gutterBottom sx={{ fontWeight: 700 }}>
-            Kweez has started!
+            {t('display.quizStarted')}
           </Typography>
 
           <Typography variant="h4" sx={{ opacity: 0.9 }}>
@@ -318,7 +320,7 @@ export default function DisplayPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mt: 4 }}>
             <CircularProgress size={32} sx={{ color: 'white' }} />
             <Typography variant="h5">
-              Waiting for the first question...
+              {t('display.waitingForFirstQuestion')}
             </Typography>
           </Box>
         </Paper>
@@ -336,10 +338,10 @@ export default function DisplayPage() {
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Typography variant="h5" color="text.secondary">
-              Question {currentQuestion.questionIndex + 1} of {currentQuestion.totalQuestions}
+              {t('display.questionOfTotal', { current: currentQuestion.questionIndex + 1, total: currentQuestion.totalQuestions })}
             </Typography>
             <Typography variant="h3" color={timeLeft <= 5 ? 'error.main' : 'primary.main'}>
-              {timeLeft}s
+              {t('display.timeSeconds', { time: timeLeft })}
             </Typography>
           </Box>
           <LinearProgress 
@@ -412,7 +414,7 @@ export default function DisplayPage() {
         {/* Header */}
         <Box sx={{ mb: 2, flexShrink: 0 }}>
           <Typography variant="h5" align="center" color="text.secondary">
-            Question {questionResults.questionIndex + 1} Results
+            {t('display.questionResults', { number: questionResults.questionIndex + 1 })}
           </Typography>
           <Typography variant="h3" align="center" sx={{ mt: 1 }}>
             {lastQuestion?.text || 'Question'}
@@ -450,7 +452,7 @@ export default function DisplayPage() {
                       ))}
                     </Pie>
                     <Tooltip 
-                      formatter={(value) => [`${value} answers`, '']}
+                      formatter={(value) => [t('display.answersCount', { count: value }), '']}
                       contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none' }}
                     />
                   </PieChart>
@@ -516,7 +518,7 @@ export default function DisplayPage() {
                       {entry.name}
                     </Typography>
                     <Typography variant="h6" color="text.secondary" sx={{ minWidth: 80, textAlign: 'right' }}>
-                      {entry.value} / {totalAnswers}
+                      {t('display.answerRatio', { count: entry.value, total: totalAnswers })}
                     </Typography>
                     {entry.isCorrect && <CheckIcon sx={{ color: '#4caf50', fontSize: 28 }} />}
                   </Box>
@@ -528,7 +530,7 @@ export default function DisplayPage() {
           {/* Leaderboard */}
           <Paper sx={{ width: 350, p: 2, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
             <Typography variant="h5" gutterBottom>
-              Top 10
+              {t('display.top10')}
             </Typography>
             <List dense sx={{ flex: 1, overflow: 'auto' }}>
               {leaderboard.slice(0, 10).map((entry) => (
@@ -566,7 +568,7 @@ export default function DisplayPage() {
     return (
       <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', p: 4 }}>
         <Typography variant="h2" align="center" gutterBottom sx={{ mb: 4 }}>
-          Final Results
+          {t('display.finalResults')}
         </Typography>
 
         {/* Podium for top 3 */}
@@ -575,9 +577,9 @@ export default function DisplayPage() {
           {top3[1] && (
             <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#a0a0a0', color: 'white', minWidth: 180 }}>
               <EmojiEventsIcon sx={{ fontSize: 48, color: '#e0e0e0' }} />
-              <Typography variant="h4">2nd</Typography>
+              <Typography variant="h4">{t('display.second')}</Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>{top3[1].name}</Typography>
-              <Typography variant="h6">{top3[1].totalScore} pts</Typography>
+              <Typography variant="h6">{top3[1].totalScore} {t('common.pts')}</Typography>
             </Paper>
           )}
 
@@ -585,9 +587,9 @@ export default function DisplayPage() {
           {top3[0] && (
             <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#ffd700', color: '#333', minWidth: 220, transform: 'scale(1.1)' }}>
               <EmojiEventsIcon sx={{ fontSize: 64, color: '#b8860b' }} />
-              <Typography variant="h3">1st</Typography>
+              <Typography variant="h3">{t('display.first')}</Typography>
               <Typography variant="h4" sx={{ fontWeight: 700 }}>{top3[0].name}</Typography>
-              <Typography variant="h5">{top3[0].totalScore} pts</Typography>
+              <Typography variant="h5">{top3[0].totalScore} {t('common.pts')}</Typography>
             </Paper>
           )}
 
@@ -595,9 +597,9 @@ export default function DisplayPage() {
           {top3[2] && (
             <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#cd7f32', color: 'white', minWidth: 180 }}>
               <EmojiEventsIcon sx={{ fontSize: 48 }} />
-              <Typography variant="h4">3rd</Typography>
+              <Typography variant="h4">{t('display.third')}</Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>{top3[2].name}</Typography>
-              <Typography variant="h6">{top3[2].totalScore} pts</Typography>
+              <Typography variant="h6">{top3[2].totalScore} {t('common.pts')}</Typography>
             </Paper>
           )}
         </Box>

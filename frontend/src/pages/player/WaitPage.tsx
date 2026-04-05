@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Paper, List, ListItem, ListItemText, Chip } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 import { useSession } from '../../context/SessionContext'
 import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function WaitPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { playerSession, sessionState } = useSession()
 
@@ -31,10 +33,10 @@ export default function WaitPage() {
 
         <Paper sx={{ p: 4, mb: 4 }}>
           <Typography variant="h5" gutterBottom>
-            Welcome, {playerSession.playerName}!
+            {t('wait.welcome', { name: playerSession.playerName })}
           </Typography>
           <Typography variant="body1" color="text.secondary" gutterBottom>
-            Waiting for the host to start the quiz...
+            {t('wait.waitingForHost')}
           </Typography>
 
           <Box sx={{ mt: 4 }}>
@@ -57,21 +59,21 @@ export default function WaitPage() {
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary">
-              players joined
+              {t('wait.playersJoined')}
             </Typography>
           </Box>
         </Paper>
 
         <Paper sx={{ p: 2 }}>
           <Typography variant="h6" gutterBottom>
-            Players
+            {t('common.players')}
           </Typography>
           <List dense>
             {participants.map((participant) => (
               <ListItem key={participant.id}>
                 <ListItemText primary={participant.name} />
                 {participant.id === myParticipant?.id && (
-                  <Chip label="You" size="small" color="primary" />
+                  <Chip label={t('common.you')} size="small" color="primary" />
                 )}
               </ListItem>
             ))}

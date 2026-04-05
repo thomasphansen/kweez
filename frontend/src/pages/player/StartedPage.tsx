@@ -2,10 +2,12 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Paper, CircularProgress } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import { useTranslation } from 'react-i18next'
 import { useSession } from '../../context/SessionContext'
 import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function StartedPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { playerSession, sessionState } = useSession()
 
@@ -54,7 +56,7 @@ export default function StartedPage() {
           </Box>
 
           <Typography variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
-            Kweez has started!
+            {t('started.quizStarted')}
           </Typography>
 
           <Typography variant="h6" sx={{ opacity: 0.9, mb: 4 }}>
@@ -64,13 +66,13 @@ export default function StartedPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
             <CircularProgress size={24} sx={{ color: 'white' }} />
             <Typography variant="body1">
-              Waiting for the first question...
+              {t('started.waitingForFirstQuestion')}
             </Typography>
           </Box>
         </Paper>
 
         <Typography variant="body2" color="text.secondary" sx={{ mt: 4 }}>
-          Get ready, {playerSession.playerName}!
+          {t('started.getReady', { name: playerSession.playerName })}
         </Typography>
       </Container>
       

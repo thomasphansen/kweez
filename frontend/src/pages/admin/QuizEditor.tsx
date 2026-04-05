@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Container,
@@ -54,6 +55,7 @@ const defaultQuestion: QuestionForm = {
 }
 
 export default function QuizEditor() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const isNew = !id
@@ -96,7 +98,7 @@ export default function QuizEditor() {
         }))
       )
     } catch (err) {
-      setError('Failed to load quiz')
+      setError(t('quizEditor.failedToLoadQuiz'))
     } finally {
       setLoading(false)
     }
@@ -113,7 +115,7 @@ export default function QuizEditor() {
       try {
         await quizApi.deleteQuestion(question.id)
       } catch (err) {
-        setError('Failed to delete question')
+        setError(t('quizEditor.failedToDeleteQuestion'))
         return
       }
     }
@@ -147,15 +149,15 @@ export default function QuizEditor() {
   const handleSaveQuestion = async (index: number) => {
     const question = questions[index]
     if (!question.text.trim()) {
-      setError('Question text is required')
+      setError(t('quizEditor.questionTextRequired'))
       return
     }
     if (!question.answerOptions.some((a) => a.text.trim())) {
-      setError('At least one answer is required')
+      setError(t('quizEditor.atLeastOneAnswer'))
       return
     }
     if (!question.answerOptions.some((a) => a.isCorrect)) {
-      setError('Mark one answer as correct')
+      setError(t('quizEditor.markOneCorrect'))
       return
     }
 
@@ -186,7 +188,7 @@ export default function QuizEditor() {
       }
       setExpandedQuestion(null)
     } catch (err) {
-      setError('Failed to save question')
+      setError(t('quizEditor.failedToSaveQuestion'))
     } finally {
       setSaving(false)
     }
@@ -195,7 +197,7 @@ export default function QuizEditor() {
   const handleImageUpload = async (index: number, file: File) => {
     const question = questions[index]
     if (!question.id) {
-      setError('Please save the question first before uploading an image')
+      setError(t('quizEditor.saveQuestionBeforeImage'))
       return
     }
 
@@ -208,7 +210,7 @@ export default function QuizEditor() {
       updated[index] = { ...updated[index], imageUrl: result.imageUrl }
       setQuestions(updated)
     } catch (err) {
-      setError('Failed to upload image')
+      setError(t('quizEditor.failedToUploadImage'))
     } finally {
       setSaving(false)
     }
@@ -227,7 +229,7 @@ export default function QuizEditor() {
       updated[index] = { ...updated[index], imageUrl: undefined }
       setQuestions(updated)
     } catch (err) {
-      setError('Failed to delete image')
+      setError(t('quizEditor.failedToDeleteImage'))
     } finally {
       setSaving(false)
     }
@@ -260,7 +262,7 @@ export default function QuizEditor() {
         setFixedJoinCode(quiz.fixedJoinCode || null)
       }
     } catch (err) {
-      setError('Failed to save quiz')
+      setError(t('quizEditor.failedToSaveQuiz'))
     } finally {
       setSaving(false)
     }
@@ -281,7 +283,7 @@ export default function QuizEditor() {
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4">
-          {isNew ? 'New Quiz' : 'Edit Quiz'}
+          {isNew ? t('quizEditor.newQuiz') : t('quizEditor.editQuiz')}
         </Typography>
       </Box>
 
@@ -295,7 +297,7 @@ export default function QuizEditor() {
       <Paper sx={{ p: 3, mb: 4 }}>
         <TextField
           fullWidth
-          label="Quiz Title"
+          label={t('admin.quizTitle')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           sx={{ mb: 2 }}
@@ -304,7 +306,7 @@ export default function QuizEditor() {
           fullWidth
           multiline
           rows={2}
-          label="Description (optional)"
+          label={t('admin.descriptionOptional')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           sx={{ mb: 2 }}
@@ -323,7 +325,7 @@ export default function QuizEditor() {
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <QrCodeIcon fontSize="small" />
-                  <span>Use fixed QR code (for printing)</span>
+                  <span>{t('quizEditor.useFixedQrCode')}</span>
                 </Box>
               }
             />
@@ -341,7 +343,7 @@ export default function QuizEditor() {
               }}
             >
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Fixed Join Code:
+                {t('quizEditor.fixedJoinCode')}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography 
@@ -364,7 +366,7 @@ export default function QuizEditor() {
                 </IconButton>
               </Box>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                Players can join at: {window.location.origin}/join?code={fixedJoinCode}
+                {t('quizEditor.playersCanJoinAt', { url: `${window.location.origin}/join?code=${fixedJoinCode}` })}
               </Typography>
             </Box>
           )}
@@ -376,7 +378,7 @@ export default function QuizEditor() {
           onClick={handleSaveQuiz}
           disabled={saving || !title.trim()}
         >
-          {saving ? 'Saving...' : 'Save Quiz'}
+          {saving ? t('quizEditor.saving') : t('quizEditor.saveQuiz')}
         </Button>
       </Paper>
 
@@ -384,9 +386,9 @@ export default function QuizEditor() {
       {!isNew && (
         <>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h5">Questions</Typography>
+            <Typography variant="h5">{t('quizEditor.questions')}</Typography>
             <Button startIcon={<AddIcon />} onClick={handleAddQuestion}>
-              Add Question
+              {t('quizEditor.addQuestion')}
             </Button>
           </Box>
 
@@ -399,7 +401,7 @@ export default function QuizEditor() {
                   sx={{ cursor: 'pointer' }}
                 >
                   <Typography sx={{ flex: 1 }}>
-                    {qIndex + 1}. {question.text || '(No text)'}
+                    {qIndex + 1}. {question.text || t('quizEditor.noText')}
                   </Typography>
                   <IconButton
                     color="error"
@@ -417,14 +419,14 @@ export default function QuizEditor() {
                     <Divider sx={{ mb: 2 }} />
                     <TextField
                       fullWidth
-                      label="Question Text"
+                      label={t('quizEditor.questionText')}
                       value={question.text}
                       onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
                       sx={{ mb: 2 }}
                     />
                     <TextField
                       type="number"
-                      label="Time Limit (seconds)"
+                      label={t('quizEditor.timeLimitSeconds')}
                       value={question.timeLimitSeconds}
                       onChange={(e) => handleQuestionChange(qIndex, 'timeLimitSeconds', parseInt(e.target.value) || 15)}
                       sx={{ mb: 2, width: 200 }}
@@ -433,7 +435,7 @@ export default function QuizEditor() {
                     {/* Image Upload */}
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                        Question Image (optional):
+                        {t('quizEditor.questionImage')}
                       </Typography>
                       {question.imageUrl ? (
                         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
@@ -458,7 +460,7 @@ export default function QuizEditor() {
                             onClick={() => handleImageDelete(qIndex)}
                             disabled={saving}
                           >
-                            Remove
+                            {t('quizEditor.remove')}
                           </Button>
                         </Box>
                       ) : (
@@ -468,7 +470,7 @@ export default function QuizEditor() {
                           startIcon={<ImageIcon />}
                           disabled={saving || !question.id}
                         >
-                          {question.id ? 'Upload Image' : 'Save question first'}
+                          {question.id ? t('quizEditor.uploadImage') : t('quizEditor.saveQuestionFirst')}
                           <input
                             type="file"
                             hidden
@@ -484,7 +486,7 @@ export default function QuizEditor() {
                     </Box>
 
                     <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                      Answers (check the correct one):
+                      {t('quizEditor.answersHint')}
                     </Typography>
                     {question.answerOptions.map((answer, aIndex) => (
                       <Box key={aIndex} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -496,7 +498,7 @@ export default function QuizEditor() {
                         <TextField
                           fullWidth
                           size="small"
-                          placeholder={`Answer ${aIndex + 1}`}
+                          placeholder={t('quizEditor.answerPlaceholder', { number: aIndex + 1 })}
                           value={answer.text}
                           onChange={(e) => handleAnswerChange(qIndex, aIndex, 'text', e.target.value)}
                         />
@@ -509,7 +511,7 @@ export default function QuizEditor() {
                         onClick={() => handleSaveQuestion(qIndex)}
                         disabled={saving}
                       >
-                        {saving ? 'Saving...' : 'Save Question'}
+                        {saving ? t('quizEditor.saving') : t('quizEditor.saveQuestion')}
                       </Button>
                     </Box>
                   </Box>
@@ -521,10 +523,10 @@ export default function QuizEditor() {
           {questions.length === 0 && (
             <Paper sx={{ p: 4, textAlign: 'center' }}>
               <Typography color="text.secondary">
-                No questions yet. Add your first question!
+                {t('quizEditor.noQuestionsYet')}
               </Typography>
               <Button startIcon={<AddIcon />} onClick={handleAddQuestion} sx={{ mt: 2 }}>
-                Add Question
+                {t('quizEditor.addQuestion')}
               </Button>
             </Paper>
           )}

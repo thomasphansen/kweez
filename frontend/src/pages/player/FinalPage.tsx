@@ -1,11 +1,13 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Box, Container, Typography, Paper, List, ListItem, ListItemText, Button, Chip } from '@mui/material'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import { useSession } from '../../context/SessionContext'
 import ConnectionStatus from '../../components/ConnectionStatus'
 
 export default function FinalPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { playerSession, leaderboard, setPlayerSession, clearGameState, disconnect } = useSession()
 
@@ -33,7 +35,7 @@ export default function FinalPage() {
     <>
       <Container maxWidth="sm" sx={{ py: 4 }}>
       <Typography variant="h3" align="center" gutterBottom>
-        Quiz Complete!
+        {t('final.quizComplete')}
       </Typography>
 
       {/* Winner announcement */}
@@ -48,12 +50,12 @@ export default function FinalPage() {
           }}
         >
           <EmojiEventsIcon sx={{ fontSize: 60, mb: 1 }} />
-          <Typography variant="h5">Winner</Typography>
+          <Typography variant="h5">{t('final.winner')}</Typography>
           <Typography variant="h3" sx={{ my: 1 }}>
             {winner.name}
           </Typography>
           <Typography variant="h5">
-            {winner.totalScore} points
+            {winner.totalScore} {t('common.points')}
           </Typography>
         </Paper>
       )}
@@ -61,12 +63,12 @@ export default function FinalPage() {
       {/* My result */}
       {myEntry && myEntry.rank !== 1 && (
         <Paper sx={{ p: 3, mb: 4, textAlign: 'center' }}>
-          <Typography variant="h6">Your Final Position</Typography>
+          <Typography variant="h6">{t('final.yourFinalPosition')}</Typography>
           <Typography variant="h2" color="primary" sx={{ my: 1 }}>
             #{myEntry.rank}
           </Typography>
           <Typography variant="h5">
-            {myEntry.totalScore} points
+            {myEntry.totalScore} {t('common.points')}
           </Typography>
         </Paper>
       )}
@@ -74,7 +76,7 @@ export default function FinalPage() {
       {/* Full leaderboard */}
       <Paper sx={{ p: 2, mb: 4 }}>
         <Typography variant="h6" gutterBottom>
-          Final Standings
+          {t('final.finalStandings')}
         </Typography>
         <List>
           {leaderboard.map((entry) => (
@@ -111,7 +113,7 @@ export default function FinalPage() {
                   {entry.totalScore}
                 </Typography>
                 {entry.participantId === playerSession.participantId && (
-                  <Chip label="You" size="small" color="primary" />
+                  <Chip label={t('common.you')} size="small" color="primary" />
                 )}
               </Box>
             </ListItem>
@@ -125,7 +127,7 @@ export default function FinalPage() {
         size="large" 
         onClick={handlePlayAgain}
       >
-        Play Again
+        {t('final.playAgain')}
       </Button>
     </Container>
     
