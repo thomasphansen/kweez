@@ -27,6 +27,8 @@ services:
       - ASPNETCORE_URLS=http://+:5000
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB:-kweez};Username=${POSTGRES_USER:-kweez};Password=${POSTGRES_PASSWORD:-kweez_secret}
       - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost:3000}
+    volumes:
+      - uploads_data:/app/uploads
     ports:
       - "5000:5000"
     depends_on:
@@ -49,3 +51,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
