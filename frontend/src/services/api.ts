@@ -121,6 +121,12 @@ export const quizApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  reorderQuestions: (quizId: string, questionIds: string[]) =>
+    fetchJson<void>(`/api/quizzes/${quizId}/questions/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify(questionIds),
+    }),
 }
 
 // Session API

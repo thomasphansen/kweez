@@ -123,7 +123,8 @@
     "failedToAddLanguage": "Failed to add language",
     "failedToSetDefaultLanguage": "Failed to set default language",
     "failedToDeleteLanguage": "Failed to delete language",
-    "cannotDeleteDefaultLanguage": "Cannot delete the default language"
+    "cannotDeleteDefaultLanguage": "Cannot delete the default language",
+    "failedToReorderQuestions": "Failed to reorder questions"
   },
   "print": {
     "haveFun": "Have fun!",
