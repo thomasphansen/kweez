@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Kweez.Api.DTOs;
 using Kweez.Api.Models;
 using Kweez.Api.Services;
@@ -25,6 +26,7 @@ public class QuizHub : Hub<IQuizHubClient>
     private readonly IScoringService _scoringService;
     private readonly IQuizNotificationService _notificationService;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<QuizHub> _logger;
 
     // Store session timing info (in production, use distributed cache)
@@ -38,13 +40,22 @@ public class QuizHub : Hub<IQuizHubClient>
         IScoringService scoringService, 
         IQuizNotificationService notificationService,
         IServiceScopeFactory scopeFactory,
+        IConfiguration configuration,
         ILogger<QuizHub> logger)
     {
         _sessionService = sessionService;
         _scoringService = scoringService;
         _notificationService = notificationService;
         _scopeFactory = scopeFactory;
+        _configuration = configuration;
         _logger = logger;
+    }
+
+    private bool IsAdmin()
+    {
+        var email = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
+        var adminEmail = _configuration["Auth:AdminEmail"] ?? "thomasphansen@gmail.com";
+        return string.Equals(email, adminEmail, StringComparison.OrdinalIgnoreCase);
     }
 
     // Player joins a session
@@ -84,6 +95,12 @@ public class QuizHub : Hub<IQuizHubClient>
     // Admin joins to control session
     public async Task JoinAsAdmin(Guid sessionId)
     {
+        if (!IsAdmin())
+        {
+            await Clients.Caller.Error("Unauthorized: Admin access required");
+            return;
+        }
+
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
         await Groups.AddToGroupAsync(Context.ConnectionId, $"admin-{sessionId}");
 
@@ -99,6 +116,12 @@ public class QuizHub : Hub<IQuizHubClient>
     // Admin starts the quiz
     public async Task StartQuiz(Guid sessionId)
     {
+        if (!IsAdmin())
+        {
+            await Clients.Caller.Error("Unauthorized: Admin access required");
+            return;
+        }
+
         var success = await _sessionService.StartSessionAsync(sessionId);
         if (!success)
         {
@@ -113,6 +136,12 @@ public class QuizHub : Hub<IQuizHubClient>
     // Admin releases next question
     public async Task ReleaseNextQuestion(Guid sessionId)
     {
+        if (!IsAdmin())
+        {
+            await Clients.Caller.Error("Unauthorized: Admin access required");
+            return;
+        }
+
         var question = await _sessionService.ReleaseNextQuestionAsync(sessionId);
         if (question == null)
         {
@@ -279,6 +308,12 @@ public class QuizHub : Hub<IQuizHubClient>
     // Admin manually closes question
     public async Task ForceCloseQuestion(Guid sessionId)
     {
+        if (!IsAdmin())
+        {
+            await Clients.Caller.Error("Unauthorized: Admin access required");
+            return;
+        }
+
         var question = await _sessionService.GetCurrentQuestionAsync(sessionId);
         if (question != null)
         {
@@ -289,6 +324,12 @@ public class QuizHub : Hub<IQuizHubClient>
     // End the quiz
     public async Task EndQuiz(Guid sessionId)
     {
+        if (!IsAdmin())
+        {
+            await Clients.Caller.Error("Unauthorized: Admin access required");
+            return;
+        }
+
         await _sessionService.EndSessionAsync(sessionId);
         _questionReleaseTimes.Remove(sessionId);
 

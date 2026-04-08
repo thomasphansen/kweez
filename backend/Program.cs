@@ -1,6 +1,10 @@
+using System.Security.Claims;
 using Kweez.Api.Data;
 using Kweez.Api.Hubs;
 using Kweez.Api.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 
@@ -15,6 +19,55 @@ builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IScoringService, ScoringService>();
 builder.Services.AddSingleton<IQuizNotificationService, QuizNotificationService>();
+
+// Authentication
+var adminEmail = builder.Configuration["Auth:AdminEmail"] ?? "thomasphansen@gmail.com";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+.AddCookie(options =>
+{
+    options.Cookie.Name = "kweez_auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.SlidingExpiration = true;
+    options.Events = new CookieAuthenticationEvents
+    {
+        OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = 401;
+            return Task.CompletedTask;
+        },
+        OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = 403;
+            return Task.CompletedTask;
+        }
+    };
+})
+.AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration["Google:ClientId"] ?? "";
+    options.ClientSecret = builder.Configuration["Google:ClientSecret"] ?? "";
+    options.CallbackPath = "/api/auth/google/callback";
+    options.SaveTokens = false;
+});
+
+// Authorization
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy =>
+        policy.RequireAssertion(context =>
+        {
+            var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+            return string.Equals(email, adminEmail, StringComparison.OrdinalIgnoreCase);
+        }));
+});
 
 // SignalR
 builder.Services.AddSignalR();
@@ -55,6 +108,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Serve uploaded files
 var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");

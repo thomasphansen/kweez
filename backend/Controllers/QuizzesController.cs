@@ -1,11 +1,13 @@
 using Kweez.Api.DTOs;
 using Kweez.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kweez.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "Admin")]
 public class QuizzesController : ControllerBase
 {
     private readonly IQuizService _quizService;

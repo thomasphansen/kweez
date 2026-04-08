@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 
 // Components
 import Layout from './components/Layout'
+import AdminRoute from './components/AdminRoute'
 
 // Player pages
 import JoinPage from './pages/player/JoinPage'
@@ -16,6 +17,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import QuizEditor from './pages/admin/QuizEditor'
 import LiveControl from './pages/admin/LiveControl'
 import PrintQRCode from './pages/admin/PrintQRCode'
+import LoginPage from './pages/admin/LoginPage'
 
 // Display page (for projector)
 import DisplayPage from './pages/display/DisplayPage'
@@ -43,9 +45,10 @@ function App() {
             <Route path="/final" element={<FinalPage />} />
 
             {/* Admin routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/quiz/:id?" element={<QuizEditor />} />
-            <Route path="/admin/live/:sessionId" element={<LiveControl />} />
+            <Route path="/admin/login" element={<LoginPage />} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/quiz/:id?" element={<AdminRoute><QuizEditor /></AdminRoute>} />
+            <Route path="/admin/live/:sessionId" element={<AdminRoute><LiveControl /></AdminRoute>} />
           </Routes>
         </Layout>
       } />

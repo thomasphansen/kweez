@@ -1,5 +1,8 @@
-import { Box, Typography, Select, MenuItem } from '@mui/material'
+import { Box, Typography, Select, MenuItem, IconButton, Tooltip } from '@mui/material'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useTranslation } from 'react-i18next'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -11,10 +14,20 @@ const languages = [
 ]
 
 export default function Layout({ children }: LayoutProps) {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { isAdmin, logout } = useAuth()
+
+  const isAdminPage = location.pathname.startsWith('/admin')
 
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode)
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/admin/login')
   }
 
   return (
@@ -78,6 +91,17 @@ export default function Layout({ children }: LayoutProps) {
             </MenuItem>
           ))}
         </Select>
+
+        {isAdminPage && isAdmin && (
+          <Tooltip title={t('auth.logout')}>
+            <IconButton
+              onClick={handleLogout}
+              sx={{ color: 'primary.contrastText', ml: 1 }}
+            >
+              <LogoutIcon />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
       {/* Main content */}

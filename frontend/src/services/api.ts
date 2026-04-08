@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || ''
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${url}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -74,6 +75,7 @@ export const quizApi = {
     const response = await fetch(`${API_URL}/api/quizzes/questions/${questionId}/image`, {
       method: 'POST',
       body: formData,
+      credentials: 'include',
     })
 
     if (!response.ok) {
@@ -157,4 +159,27 @@ export const sessionApi = {
   
   end: (sessionId: string) =>
     fetchJson<void>(`/api/sessions/${sessionId}/end`, { method: 'POST' }),
+}
+
+// Auth API
+export interface AuthUser {
+  email: string
+  name: string
+  picture?: string
+}
+
+export interface AuthStatus {
+  isAuthenticated: boolean
+  isAdmin: boolean
+  email?: string
+}
+
+export const authApi = {
+  getStatus: () => fetchJson<AuthStatus>('/api/auth/status'),
+  
+  getMe: () => fetchJson<AuthUser>('/api/auth/me'),
+  
+  logout: () => fetchJson<{ message: string }>('/api/auth/logout', { method: 'POST' }),
+  
+  getLoginUrl: () => `${API_URL}/api/auth/login`,
 }

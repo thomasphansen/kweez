@@ -27,6 +27,10 @@ services:
       - ASPNETCORE_URLS=http://+:5000
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB:-kweez};Username=${POSTGRES_USER:-kweez};Password=${POSTGRES_PASSWORD:-kweez_secret}
       - AllowedOrigins=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
+      - Auth__AdminEmail=${AUTH_ADMIN_EMAIL:-thomasphansen@gmail.com}
+      - FrontendUrl=${FRONTEND_URL:-http://localhost:3000}
     volumes:
       - uploads_data:/app/uploads
     ports:

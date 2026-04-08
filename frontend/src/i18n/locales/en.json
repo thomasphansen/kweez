@@ -15,6 +15,14 @@
     "disconnected": "Disconnected",
     "add": "Add"
   },
+  "auth": {
+    "adminLogin": "Admin Login",
+    "loginDescription": "Sign in with your Google account to access the admin area.",
+    "loginWithGoogle": "Sign in with Google",
+    "logout": "Logout",
+    "accessDenied": "Access denied. Your account is not authorized to access the admin area.",
+    "authFailed": "Authentication failed. Please try again."
+  },
   "join": {
     "title": "kweez",
     "subtitle": "Join the quiz!",

@@ -15,6 +15,14 @@
     "disconnected": "Desconectado",
     "add": "Adicionar"
   },
+  "auth": {
+    "adminLogin": "Login do Administrador",
+    "loginDescription": "Entre com sua conta Google para acessar a área administrativa.",
+    "loginWithGoogle": "Entrar com Google",
+    "logout": "Sair",
+    "accessDenied": "Acesso negado. Sua conta não está autorizada a acessar a área administrativa.",
+    "authFailed": "Falha na autenticação. Por favor, tente novamente."
+  },
   "join": {
     "title": "kweez",
     "subtitle": "Entre no quiz!",

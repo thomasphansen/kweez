@@ -1,5 +1,6 @@
 using Kweez.Api.DTOs;
 using Kweez.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kweez.Api.Controllers;
@@ -16,6 +17,7 @@ public class SessionsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "Admin")]
     public async Task<ActionResult<List<SessionDto>>> GetActiveSessions()
     {
         var sessions = await _sessionService.GetActiveSessionsAsync();
@@ -23,6 +25,7 @@ public class SessionsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "Admin")]
     public async Task<ActionResult<SessionDto>> GetById(Guid id)
     {
         var session = await _sessionService.GetSessionAsync(id);
@@ -39,6 +42,7 @@ public class SessionsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Admin")]
     public async Task<ActionResult<SessionDto>> Create(CreateSessionRequest request)
     {
         try
@@ -62,6 +66,7 @@ public class SessionsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/participants")]
+    [Authorize(Policy = "Admin")]
     public async Task<ActionResult<List<ParticipantDto>>> GetParticipants(Guid id)
     {
         var participants = await _sessionService.GetParticipantsAsync(id);
@@ -76,6 +81,7 @@ public class SessionsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/end")]
+    [Authorize(Policy = "Admin")]
     public async Task<ActionResult> EndSession(Guid id)
     {
         var success = await _sessionService.EndSessionAsync(id);
