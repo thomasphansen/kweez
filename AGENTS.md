@@ -142,7 +142,7 @@ kweez/
 
 ## Game Flow
 
-1. Player scans QR code → opens `/join?code=XXXXXX`
+1. Player scans QR code → opens `/join?session=XXXXXX`
 2. Player enters name → joins session → `/wait`
 3. Player waits in lobby (sees other players)
 4. Admin clicks "Start Quiz" → Players see `/started` ("Kweez has started!")

@@ -671,7 +671,7 @@ export default function QuizEditor() {
                 </IconButton>
               </Box>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                {t('quizEditor.playersCanJoinAt', { url: `${window.location.origin}/join?code=${fixedJoinCode}` })}
+                {t('quizEditor.playersCanJoinAt', { url: `${window.location.origin}/join?session=${fixedJoinCode}` })}
               </Typography>
             </Box>
           )}

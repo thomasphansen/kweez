@@ -13,7 +13,7 @@ export default function PrintQRCode() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const joinUrl = `${window.location.origin}/join?code=${joinCode}`
+  const joinUrl = `${window.location.origin}/join?session=${joinCode}`
 
   useEffect(() => {
     if (id) {

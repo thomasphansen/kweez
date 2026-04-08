@@ -192,5 +192,82 @@
     "first": "1st",
     "second": "2nd",
     "third": "3rd"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: {{date}}",
+    "introduction": {
+      "title": "Introduction",
+      "content": "Kweez is a self-hosted quiz application. This privacy policy explains how we collect, use, and protect your information when you use our service."
+    },
+    "dataCollected": {
+      "title": "Information We Collect",
+      "intro": "We collect the following types of information:",
+      "players": {
+        "title": "Player Information:",
+        "content": "When you join a quiz, we collect only the nickname you choose to display during the game. No account registration is required."
+      },
+      "admin": {
+        "title": "Administrator Information:",
+        "content": "If you sign in as an administrator using Google, we receive your email address and name from Google to verify your identity."
+      },
+      "gameData": {
+        "title": "Game Data:",
+        "content": "We store your answers and scores during quiz sessions to display leaderboards and results."
+      }
+    },
+    "howWeUse": {
+      "title": "How We Use Your Information",
+      "intro": "We use the collected information solely to:",
+      "items": {
+        "runQuiz": "Run the quiz and display your name to other participants",
+        "displayLeaderboard": "Calculate and display scores and leaderboards",
+        "adminAccess": "Authenticate administrators to manage quizzes"
+      }
+    },
+    "cookies": {
+      "title": "Cookies",
+      "content": "We use a minimal number of cookies necessary for the application to function:",
+      "auth": {
+        "title": "Authentication Cookie:",
+        "content": "Used to keep administrators logged in (expires after 7 days)."
+      },
+      "language": {
+        "title": "Language Preference:",
+        "content": "Stored in your browser to remember your preferred language."
+      }
+    },
+    "thirdParty": {
+      "title": "Third-Party Services",
+      "content": "We use the following third-party services:",
+      "google": {
+        "title": "Google OAuth:",
+        "content": "Used for administrator authentication. When you sign in with Google, your authentication is handled by Google's servers.",
+        "link": "Google Privacy Policy"
+      }
+    },
+    "dataRetention": {
+      "title": "Data Retention",
+      "content": "Player nicknames and game data are retained only for the duration of quiz sessions. Quiz content created by administrators is stored until explicitly deleted. Administrator authentication data is retained while you remain logged in."
+    },
+    "dataSecurity": {
+      "title": "Data Security",
+      "content": "We implement appropriate security measures to protect your information, including encrypted connections (HTTPS) and secure authentication practices."
+    },
+    "yourRights": {
+      "title": "Your Rights",
+      "content": "Since Kweez is self-hosted, the data controller is the person or organization hosting this instance. You may contact them to request access to, correction of, or deletion of your personal data."
+    },
+    "contact": {
+      "title": "Contact",
+      "content": "If you have questions about this privacy policy or your data, please contact:"
+    },
+    "changes": {
+      "title": "Changes to This Policy",
+      "content": "We may update this privacy policy from time to time. Any changes will be reflected on this page with an updated revision date."
+    }
+  },
+  "footer": {
+    "privacyPolicy": "Privacy Policy"
   }
 }

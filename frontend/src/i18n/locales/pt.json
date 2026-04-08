@@ -192,5 +192,82 @@
     "first": "1º",
     "second": "2º",
     "third": "3º"
+  },
+  "privacy": {
+    "title": "Política de Privacidade",
+    "lastUpdated": "Última atualização: {{date}}",
+    "introduction": {
+      "title": "Introdução",
+      "content": "Kweez é um aplicativo de quiz auto-hospedado. Esta política de privacidade explica como coletamos, usamos e protegemos suas informações quando você usa nosso serviço."
+    },
+    "dataCollected": {
+      "title": "Informações que Coletamos",
+      "intro": "Coletamos os seguintes tipos de informações:",
+      "players": {
+        "title": "Informações do Jogador:",
+        "content": "Quando você entra em um quiz, coletamos apenas o apelido que você escolhe para exibir durante o jogo. Não é necessário criar uma conta."
+      },
+      "admin": {
+        "title": "Informações do Administrador:",
+        "content": "Se você entrar como administrador usando o Google, recebemos seu endereço de e-mail e nome do Google para verificar sua identidade."
+      },
+      "gameData": {
+        "title": "Dados do Jogo:",
+        "content": "Armazenamos suas respostas e pontuações durante as sessões de quiz para exibir classificações e resultados."
+      }
+    },
+    "howWeUse": {
+      "title": "Como Usamos Suas Informações",
+      "intro": "Usamos as informações coletadas apenas para:",
+      "items": {
+        "runQuiz": "Executar o quiz e exibir seu nome para outros participantes",
+        "displayLeaderboard": "Calcular e exibir pontuações e classificações",
+        "adminAccess": "Autenticar administradores para gerenciar quizzes"
+      }
+    },
+    "cookies": {
+      "title": "Cookies",
+      "content": "Usamos um número mínimo de cookies necessários para o funcionamento do aplicativo:",
+      "auth": {
+        "title": "Cookie de Autenticação:",
+        "content": "Usado para manter administradores conectados (expira após 7 dias)."
+      },
+      "language": {
+        "title": "Preferência de Idioma:",
+        "content": "Armazenado no seu navegador para lembrar seu idioma preferido."
+      }
+    },
+    "thirdParty": {
+      "title": "Serviços de Terceiros",
+      "content": "Usamos os seguintes serviços de terceiros:",
+      "google": {
+        "title": "Google OAuth:",
+        "content": "Usado para autenticação de administradores. Quando você entra com o Google, sua autenticação é gerenciada pelos servidores do Google.",
+        "link": "Política de Privacidade do Google"
+      }
+    },
+    "dataRetention": {
+      "title": "Retenção de Dados",
+      "content": "Apelidos de jogadores e dados do jogo são mantidos apenas durante as sessões de quiz. O conteúdo de quiz criado por administradores é armazenado até ser explicitamente excluído. Dados de autenticação de administradores são mantidos enquanto você permanecer conectado."
+    },
+    "dataSecurity": {
+      "title": "Segurança dos Dados",
+      "content": "Implementamos medidas de segurança apropriadas para proteger suas informações, incluindo conexões criptografadas (HTTPS) e práticas de autenticação seguras."
+    },
+    "yourRights": {
+      "title": "Seus Direitos",
+      "content": "Como o Kweez é auto-hospedado, o controlador de dados é a pessoa ou organização que hospeda esta instância. Você pode contatá-los para solicitar acesso, correção ou exclusão de seus dados pessoais."
+    },
+    "contact": {
+      "title": "Contato",
+      "content": "Se você tiver dúvidas sobre esta política de privacidade ou seus dados, entre em contato:"
+    },
+    "changes": {
+      "title": "Alterações nesta Política",
+      "content": "Podemos atualizar esta política de privacidade periodicamente. Quaisquer alterações serão refletidas nesta página com uma data de revisão atualizada."
+    }
+  },
+  "footer": {
+    "privacyPolicy": "Política de Privacidade"
   }
 }

@@ -210,7 +210,7 @@ export default function DisplayPage() {
   }, [])
 
   const participants = sessionState?.participants || []
-  const joinUrl = session ? `${window.location.origin}/join?code=${session.joinCode}` : ''
+  const joinUrl = session ? `${window.location.origin}/join?session=${session.joinCode}` : ''
 
   // Loading state
   if (displayState === 'loading') {

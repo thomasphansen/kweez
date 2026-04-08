@@ -22,6 +22,9 @@ import LoginPage from './pages/admin/LoginPage'
 // Display page (for projector)
 import DisplayPage from './pages/display/DisplayPage'
 
+// Other pages
+import PrivacyPolicy from './pages/PrivacyPolicy'
+
 function App() {
   return (
     <Routes>
@@ -49,6 +52,9 @@ function App() {
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/quiz/:id?" element={<AdminRoute><QuizEditor /></AdminRoute>} />
             <Route path="/admin/live/:sessionId" element={<AdminRoute><LiveControl /></AdminRoute>} />
+
+            {/* Other routes */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
           </Routes>
         </Layout>
       } />

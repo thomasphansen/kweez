@@ -1,7 +1,7 @@
-import { Box, Typography, Select, MenuItem, IconButton, Tooltip } from '@mui/material'
+import { Box, Typography, Select, MenuItem, IconButton, Tooltip, Link as MuiLink } from '@mui/material'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 interface LayoutProps {
@@ -130,6 +130,19 @@ export default function Layout({ children }: LayoutProps) {
       >
         <Typography variant="caption">
           &copy; 2026 - Thomas Hansen
+          {' · '}
+          <MuiLink
+            component={Link}
+            to="/privacy"
+            sx={{
+              color: 'grey.500',
+              '&:hover': {
+                color: 'grey.300',
+              },
+            }}
+          >
+            {t('privacy.title')}
+          </MuiLink>
         </Typography>
       </Box>
     </Box>
