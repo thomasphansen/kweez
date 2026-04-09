@@ -28,6 +28,7 @@ builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IScoringService, ScoringService>();
 builder.Services.AddSingleton<IQuizNotificationService, QuizNotificationService>();
+builder.Services.AddSingleton<ITranslationService, TranslationService>();
 
 // Authentication
 var adminEmail = builder.Configuration["Auth:AdminEmail"] ?? "thomasphansen@gmail.com";

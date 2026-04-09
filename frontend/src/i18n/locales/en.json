@@ -13,7 +13,8 @@
     "goBack": "Go Back",
     "connected": "Connected",
     "disconnected": "Disconnected",
-    "add": "Add"
+    "add": "Add",
+    "continue": "Continue"
   },
   "auth": {
     "adminLogin": "Admin Login",
@@ -132,7 +133,20 @@
     "failedToSetDefaultLanguage": "Failed to set default language",
     "failedToDeleteLanguage": "Failed to delete language",
     "cannotDeleteDefaultLanguage": "Cannot delete the default language",
-    "failedToReorderQuestions": "Failed to reorder questions"
+    "failedToReorderQuestions": "Failed to reorder questions",
+    "translateFromDefault": "Translate from {{language}}",
+    "translating": "Translating...",
+    "translationFailed": "Translation failed. Please try again.",
+    "noSourceTextToTranslate": "No text in the default language to translate",
+    "saveQuestionBeforeTranslate": "Save the question first to enable translation",
+    "translationNotConfigured": "Translation service not configured",
+    "cannotTranslateDefaultLanguage": "Cannot translate the default language",
+    "confirmTranslateTitle": "Overwrite translations?",
+    "confirmTranslateMessage": "This will overwrite existing translations for this question. Are you sure you want to continue?",
+    "autoTranslateQuestions": "Automatically translate all questions from {{language}}",
+    "autoTranslateDescription": "Uses DeepL translation service",
+    "someTranslationsFailed": "{{count}} of {{total}} translations failed",
+    "autoTranslationFailed": "Auto-translation failed. Content copied from default language."
   },
   "print": {
     "haveFun": "Have fun!",

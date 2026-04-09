@@ -183,3 +183,49 @@ export const authApi = {
   
   getLoginUrl: () => `${API_URL}/api/auth/login`,
 }
+
+// Translation API
+export interface TranslationStatus {
+  configured: boolean
+}
+
+export interface TranslateResponse {
+  translations: string[]
+}
+
+export interface QuestionToTranslate {
+  questionId: string
+  questionText: string
+  answerTexts: string[]
+}
+
+export interface QuestionTranslationResult {
+  questionId: string
+  questionText: string
+  answerTexts: string[]
+  success: boolean
+  error?: string
+}
+
+export interface TranslateBulkResponse {
+  results: QuestionTranslationResult[]
+  totalCount: number
+  successCount: number
+  errors: string[]
+}
+
+export const translationApi = {
+  getStatus: () => fetchJson<TranslationStatus>('/api/translation/status'),
+  
+  translate: (texts: string[], sourceLang: string, targetLang: string) =>
+    fetchJson<TranslateResponse>('/api/translation/translate', {
+      method: 'POST',
+      body: JSON.stringify({ texts, sourceLang, targetLang }),
+    }),
+  
+  translateBulk: (questions: QuestionToTranslate[], sourceLang: string, targetLang: string) =>
+    fetchJson<TranslateBulkResponse>('/api/translation/translate-bulk', {
+      method: 'POST',
+      body: JSON.stringify({ questions, sourceLang, targetLang }),
+    }),
+}

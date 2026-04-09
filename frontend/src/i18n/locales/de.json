@@ -1,0 +1,287 @@
+{
+  "common": {
+    "players": "Spieler",
+    "you": "Du",
+    "points": "Punkte",
+    "pts": "Pkt",
+    "question": "Frage",
+    "online": "Online",
+    "offline": "Offline",
+    "cancel": "Abbrechen",
+    "create": "Erstellen",
+    "delete": "Löschen",
+    "goBack": "Zurück",
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "add": "Hinzufügen",
+    "continue": "Fortfahren"
+  },
+  "auth": {
+    "adminLogin": "Administrator-Anmeldung",
+    "loginDescription": "Melden Sie sich mit Ihrem Google-Konto an, um auf den Administratorbereich zuzugreifen.",
+    "loginWithGoogle": "Mit Google anmelden",
+    "logout": "Abmelden",
+    "accessDenied": "Zugriff verweigert. Ihr Konto ist nicht berechtigt, auf den Administratorbereich zuzugreifen.",
+    "authFailed": "Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "join": {
+    "title": "kweez",
+    "subtitle": "Am Quiz teilnehmen!",
+    "gamePinLabel": "Spiel-PIN",
+    "gamePinPlaceholder": "6-stelligen Code eingeben",
+    "yourNameLabel": "Dein Name",
+    "yourNamePlaceholder": "Namen eingeben",
+    "joinGame": "Spiel beitreten",
+    "quizFound": "Quiz: {{title}}",
+    "sessionNotFound": "Sitzung nicht gefunden",
+    "invalidSessionCode": "Ungültiger Sitzungscode",
+    "failedToJoin": "Beitritt fehlgeschlagen"
+  },
+  "wait": {
+    "welcome": "Willkommen, {{name}}!",
+    "waitingForHost": "Warten auf den Host, um das Quiz zu starten...",
+    "playersJoined": "Spieler beigetreten"
+  },
+  "started": {
+    "quizStarted": "Kweez hat begonnen!",
+    "waitingForFirstQuestion": "Warten auf die erste Frage...",
+    "getReady": "Mach dich bereit, {{name}}!"
+  },
+  "play": {
+    "questionOf": "Frage {{current}} von {{total}}",
+    "timeLeft": "{{time}}s",
+    "tapToChange": "Tippe auf eine andere Antwort zum Ändern",
+    "answerSubmitted": "Antwort gesendet!",
+    "waitingForResults": "Warten auf Ergebnisse..."
+  },
+  "results": {
+    "questionResults": "Ergebnisse Frage {{number}}",
+    "correct": "Richtig!",
+    "wrong": "Falsch!",
+    "plusPoints": "+{{points}} Punkte",
+    "yourPosition": "Deine Position",
+    "leaderboard": "Rangliste",
+    "waitingForNextQuestion": "Warten auf nächste Frage..."
+  },
+  "final": {
+    "quizComplete": "Quiz abgeschlossen!",
+    "winner": "Gewinner",
+    "yourFinalPosition": "Deine Endposition",
+    "finalStandings": "Endstand",
+    "playAgain": "Nochmal spielen"
+  },
+  "admin": {
+    "dashboard": "Administrator-Dashboard",
+    "activeSessions": "Aktive Sitzungen",
+    "quizzes": "Quizze",
+    "newQuiz": "Neues Quiz",
+    "noQuizzesYet": "Noch keine Quizze. Erstelle dein erstes Quiz!",
+    "questionsCount": "{{count}} Fragen",
+    "createNewQuiz": "Neues Quiz erstellen",
+    "quizTitle": "Quiz-Titel",
+    "descriptionOptional": "Beschreibung (optional)",
+    "deleteQuiz": "Quiz löschen?",
+    "deleteQuizConfirm": "Dies wird das Quiz und alle seine Fragen dauerhaft löschen. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "fixedCode": "Fester Code: {{code}}",
+    "startSession": "Sitzung starten",
+    "printQrCodes": "QR-Codes drucken",
+    "edit": "Bearbeiten",
+    "quizLanguage": "Quiz-Sprache"
+  },
+  "quizEditor": {
+    "newQuiz": "Neues Quiz",
+    "editQuiz": "Quiz bearbeiten",
+    "useFixedQrCode": "Festen QR-Code verwenden (zum Drucken)",
+    "fixedJoinCode": "Fester Beitrittscode:",
+    "playersCanJoinAt": "Spieler können beitreten unter: {{url}}",
+    "saveQuiz": "Quiz speichern",
+    "saving": "Speichern...",
+    "questions": "Fragen",
+    "addQuestion": "Frage hinzufügen",
+    "noText": "(Kein Text)",
+    "questionText": "Fragetext",
+    "timeLimitSeconds": "Zeitlimit (Sekunden)",
+    "questionImage": "Fragebild (optional):",
+    "uploadImage": "Bild hochladen",
+    "saveQuestionFirst": "Frage zuerst speichern",
+    "remove": "Entfernen",
+    "answersHint": "Antworten (die richtige markieren):",
+    "answerPlaceholder": "Antwort {{number}}",
+    "saveQuestion": "Frage speichern",
+    "noQuestionsYet": "Noch keine Fragen. Füge deine erste Frage hinzu!",
+    "failedToLoadQuiz": "Quiz konnte nicht geladen werden",
+    "failedToSaveQuiz": "Quiz konnte nicht gespeichert werden",
+    "failedToSaveQuestion": "Frage konnte nicht gespeichert werden",
+    "failedToDeleteQuestion": "Frage konnte nicht gelöscht werden",
+    "failedToUploadImage": "Bild konnte nicht hochgeladen werden",
+    "failedToDeleteImage": "Bild konnte nicht gelöscht werden",
+    "questionTextRequired": "Fragetext ist erforderlich",
+    "atLeastOneAnswer": "Mindestens eine Antwort ist erforderlich",
+    "markOneCorrect": "Eine Antwort als richtig markieren",
+    "saveQuestionBeforeImage": "Bitte speichere die Frage zuerst, bevor du ein Bild hochlädst",
+    "sharedSettings": "Gemeinsame Einstellungen (gleich für alle Sprachen)",
+    "correctAnswer": "Richtige Antwort",
+    "answerNumber": "Antwort {{number}}",
+    "answerTexts": "Antworttexte",
+    "languages": "Sprachen",
+    "languagesDescription": "Verwalte die verfügbaren Sprachen für dieses Quiz. Klicke auf eine Sprache, um sie als Standard festzulegen. Die Standardsprache kann nicht gelöscht werden.",
+    "addLanguage": "Sprache hinzufügen",
+    "defaultLanguage": "Standardsprache",
+    "clickToSetDefault": "Klicken, um als Standard festzulegen",
+    "languageAlreadyExists": "Diese Sprache wurde bereits hinzugefügt",
+    "failedToAddLanguage": "Sprache konnte nicht hinzugefügt werden",
+    "failedToSetDefaultLanguage": "Standardsprache konnte nicht festgelegt werden",
+    "failedToDeleteLanguage": "Sprache konnte nicht gelöscht werden",
+    "cannotDeleteDefaultLanguage": "Standardsprache kann nicht gelöscht werden",
+    "failedToReorderQuestions": "Reihenfolge der Fragen konnte nicht geändert werden",
+    "translateFromDefault": "Aus {{language}} übersetzen",
+    "translating": "Übersetzen...",
+    "translationFailed": "Übersetzung fehlgeschlagen. Bitte versuche es erneut.",
+    "noSourceTextToTranslate": "Kein Text in der Standardsprache zum Übersetzen",
+    "saveQuestionBeforeTranslate": "Speichere die Frage zuerst, um die Übersetzung zu aktivieren",
+    "translationNotConfigured": "Übersetzungsdienst nicht konfiguriert",
+    "cannotTranslateDefaultLanguage": "Standardsprache kann nicht übersetzt werden",
+    "confirmTranslateTitle": "Übersetzungen überschreiben?",
+    "confirmTranslateMessage": "Dies wird vorhandene Übersetzungen für diese Frage überschreiben. Bist du sicher, dass du fortfahren möchtest?",
+    "autoTranslateQuestions": "Alle Fragen automatisch aus {{language}} übersetzen",
+    "autoTranslateDescription": "Verwendet den DeepL-Übersetzungsdienst",
+    "someTranslationsFailed": "{{count}} von {{total}} Übersetzungen fehlgeschlagen",
+    "autoTranslationFailed": "Automatische Übersetzung fehlgeschlagen. Inhalt aus Standardsprache kopiert."
+  },
+  "print": {
+    "haveFun": "Viel Spaß!",
+    "noFixedQrCode": "Dieses Quiz hat keinen festen QR-Code",
+    "failedToLoadQuiz": "Quiz konnte nicht geladen werden"
+  },
+  "liveControl": {
+    "openDisplay": "Anzeige öffnen",
+    "joinCode": "Beitrittscode: {{code}}",
+    "currentQuestion": "Frage {{current}} von {{total}}",
+    "timeLimit": "Zeitlimit: {{seconds}} Sekunden",
+    "questionResultsTitle": "Ergebnisse Frage {{number}}",
+    "answerDistribution": "Antwortverteilung angezeigt. Bereit für die nächste Frage.",
+    "controls": "Steuerung",
+    "startQuiz": "Quiz starten",
+    "cancelSession": "Sitzung abbrechen",
+    "firstQuestion": "Erste Frage",
+    "nextQuestion": "Nächste Frage",
+    "finalResults": "Endergebnisse",
+    "forceCloseQuestion": "Frage erzwungen beenden",
+    "endQuiz": "Quiz beenden",
+    "backToDashboard": "Zurück zum Dashboard",
+    "playersLeaderboard": "Spieler",
+    "waitingForPlayers": "Warten auf Spieler...",
+    "cancelSessionTitle": "Sitzung abbrechen?",
+    "cancelSessionMessage": "Dies wird die Sitzung abbrechen. Alle Spieler werden getrennt.",
+    "endQuizTitle": "Quiz beenden?",
+    "endQuizMessage": "Dies wird das Quiz sofort beenden. Spieler sehen die Endrangliste.",
+    "sessionNotFound": "Sitzung nicht gefunden",
+    "failedToConnect": "Verbindung zu Echtzeit-Updates fehlgeschlagen",
+    "failedToStartQuiz": "Quiz konnte nicht gestartet werden",
+    "failedToReleaseQuestion": "Frage konnte nicht freigegeben werden",
+    "failedToCloseQuestion": "Frage konnte nicht beendet werden",
+    "failedToEndQuiz": "Quiz konnte nicht beendet werden"
+  },
+  "connection": {
+    "reconnecting": "Verbindung wird wiederhergestellt...",
+    "pleaseWait": "Bitte warte, während wir deine Verbindung wiederherstellen",
+    "connectionLost": "Verbindung verloren",
+    "tryingToReconnect": "Versuche, Verbindung wiederherzustellen..."
+  },
+  "display": {
+    "noActiveGame": "Kein aktives Spiel",
+    "waitingForSession": "Warten auf den Start einer Sitzung...",
+    "joinCodeLabel": "Beitrittscode: {{code}}",
+    "playersCount": "Spieler ({{count}})",
+    "waitingForPlayersJoin": "Warten auf Spieler...",
+    "quizStarted": "Quiz gestartet!",
+    "waitingForFirstQuestion": "Warten auf erste Frage...",
+    "questionOfTotal": "Frage {{current}} von {{total}}",
+    "timeSeconds": "{{time}}s",
+    "questionResults": "Ergebnisse Frage {{number}}",
+    "answersCount": "{{count}} Antworten",
+    "answerRatio": "{{count}}/{{total}}",
+    "top10": "Top 10",
+    "finalResults": "Endergebnisse",
+    "first": "1.",
+    "second": "2.",
+    "third": "3."
+  },
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "lastUpdated": "Zuletzt aktualisiert: {{date}}",
+    "introduction": {
+      "title": "Einführung",
+      "content": "Kweez ist eine selbst gehostete Quiz-Anwendung. Diese Datenschutzerklärung erklärt, wie wir Ihre Informationen sammeln, verwenden und schützen, wenn Sie unseren Dienst nutzen."
+    },
+    "dataCollected": {
+      "title": "Informationen, die wir sammeln",
+      "intro": "Wir sammeln folgende Arten von Informationen:",
+      "players": {
+        "title": "Spielerinformationen:",
+        "content": "Wenn Sie an einem Quiz teilnehmen, erfassen wir nur den Spitznamen, den Sie während des Spiels anzeigen möchten. Eine Kontoregistrierung ist nicht erforderlich."
+      },
+      "admin": {
+        "title": "Administratorinformationen:",
+        "content": "Wenn Sie sich als Administrator mit Google anmelden, erhalten wir Ihre E-Mail-Adresse und Ihren Namen von Google, um Ihre Identität zu überprüfen."
+      },
+      "gameData": {
+        "title": "Spieldaten:",
+        "content": "Wir speichern Ihre Antworten und Punkte während der Quiz-Sitzungen, um Ranglisten und Ergebnisse anzuzeigen."
+      }
+    },
+    "howWeUse": {
+      "title": "Wie wir Ihre Informationen verwenden",
+      "intro": "Wir verwenden die gesammelten Informationen ausschließlich, um:",
+      "items": {
+        "runQuiz": "Das Quiz durchzuführen und Ihren Namen anderen Teilnehmern anzuzeigen",
+        "displayLeaderboard": "Punkte und Ranglisten zu berechnen und anzuzeigen",
+        "adminAccess": "Administratoren zur Verwaltung von Quizzen zu authentifizieren"
+      }
+    },
+    "cookies": {
+      "title": "Cookies",
+      "content": "Wir verwenden eine minimale Anzahl von Cookies, die für die Funktion der Anwendung notwendig sind:",
+      "auth": {
+        "title": "Authentifizierungs-Cookie:",
+        "content": "Wird verwendet, um Administratoren angemeldet zu halten (läuft nach 7 Tagen ab)."
+      },
+      "language": {
+        "title": "Sprachpräferenz:",
+        "content": "Wird in Ihrem Browser gespeichert, um Ihre bevorzugte Sprache zu merken."
+      }
+    },
+    "thirdParty": {
+      "title": "Drittanbieterdienste",
+      "content": "Wir nutzen folgende Drittanbieterdienste:",
+      "google": {
+        "title": "Google OAuth:",
+        "content": "Wird für die Administratorauthentifizierung verwendet. Wenn Sie sich mit Google anmelden, wird Ihre Authentifizierung von den Servern von Google verarbeitet.",
+        "link": "Google-Datenschutzerklärung"
+      }
+    },
+    "dataRetention": {
+      "title": "Datenspeicherung",
+      "content": "Spielerspitznamen und Spieldaten werden nur für die Dauer der Quiz-Sitzungen gespeichert. Von Administratoren erstellte Quiz-Inhalte werden gespeichert, bis sie explizit gelöscht werden. Administrator-Authentifizierungsdaten werden gespeichert, solange Sie angemeldet bleiben."
+    },
+    "dataSecurity": {
+      "title": "Datensicherheit",
+      "content": "Wir implementieren angemessene Sicherheitsmaßnahmen zum Schutz Ihrer Informationen, einschließlich verschlüsselter Verbindungen (HTTPS) und sicherer Authentifizierungspraktiken."
+    },
+    "yourRights": {
+      "title": "Ihre Rechte",
+      "content": "Da Kweez selbst gehostet wird, ist der Datenverantwortliche die Person oder Organisation, die diese Instanz hostet. Sie können sie kontaktieren, um Zugang zu, Berichtigung von oder Löschung Ihrer personenbezogenen Daten anzufordern."
+    },
+    "contact": {
+      "title": "Kontakt",
+      "content": "Wenn Sie Fragen zu dieser Datenschutzerklärung oder Ihren Daten haben, kontaktieren Sie bitte:"
+    },
+    "changes": {
+      "title": "Änderungen an dieser Richtlinie",
+      "content": "Wir können diese Datenschutzerklärung von Zeit zu Zeit aktualisieren. Alle Änderungen werden auf dieser Seite mit einem aktualisierten Revisionsdatum widergespiegelt."
+    }
+  },
+  "footer": {
+    "privacyPolicy": "Datenschutzerklärung"
+  }
+}

@@ -9,7 +9,8 @@ Participants join using a QR code, enter their name, and answer timed questions 
 - **Real-time synchronization** - All players see questions and results simultaneously
 - **QR code joining** - Players scan a code to join instantly
 - **Mobile-first design** - Large touch targets, responsive layout
-- **Multi-language support** - English and Portuguese
+- **Multi-language support** - English and Portuguese (more can be added)
+- **Auto-translation** - Translate quiz content using DeepL (optional)
 - **Fixed QR codes** - Quizzes can have permanent QR codes that work across sessions
 - **Google OAuth** - Secure admin access with Google authentication
 - **Self-hosted** - Run on your own server with Docker
@@ -195,6 +196,51 @@ docker compose up -d --build
 - **App not verified warning**: This is normal for apps in testing mode. Click "Continue" to proceed
 - **Cookie issues**: Make sure your reverse proxy is forwarding headers correctly and the site is served over HTTPS
 
+## Auto-Translation (Optional)
+
+Kweez can automatically translate quiz questions and answers using DeepL. This feature is optional - the application works without it, but the translate buttons will be disabled.
+
+### Setting up DeepL
+
+1. Go to [DeepL API](https://www.deepl.com/pro-api)
+2. Click **Sign up for free** to create a free account
+3. Verify your email address
+4. Once logged in, go to your [Account Summary](https://www.deepl.com/account/summary)
+5. Scroll down to the **Authentication Key for DeepL API** section
+6. Copy your API key
+
+### Free Tier Limits
+
+The DeepL API Free plan includes:
+- **500,000 characters per month** (resets monthly)
+- A typical question with 4 answers uses ~200-300 characters
+- This allows approximately **1,500-2,500 question translations per month**
+
+### Configure DeepL in Kweez
+
+Add your API key to your `.env` file:
+
+```bash
+DEEPL_API_KEY=your-deepl-api-key
+```
+
+Then restart the services:
+
+```bash
+docker compose up -d --build
+```
+
+### Using Auto-Translation
+
+Once configured, you can:
+
+1. **Translate individual questions**: When editing a question, switch to a non-default language tab and click the "Translate from [Language]" button
+2. **Bulk translate when adding a language**: When adding a new language to a quiz, check the "Automatically translate all questions" option to translate all existing questions at once
+
+### Supported Languages
+
+DeepL supports translation between: Danish, German, English, Spanish, French, Portuguese, Dutch, Italian, Polish, Russian, Japanese, Chinese, and many more.
+
 ## Environment Variables Reference
 
 | Variable | Description | Default |
@@ -208,6 +254,7 @@ docker compose up -d --build
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | (required) |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | (required) |
 | `AUTH_ADMIN_EMAIL` | Email allowed to access admin | `thomasphansen@gmail.com` |
+| `DEEPL_API_KEY` | DeepL API key for auto-translation | (optional) |
 
 ## Tech Stack
 

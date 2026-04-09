@@ -1,0 +1,287 @@
+{
+  "common": {
+    "players": "Spillere",
+    "you": "Dig",
+    "points": "point",
+    "pts": "pts",
+    "question": "Spørgsmål",
+    "online": "Online",
+    "offline": "Offline",
+    "cancel": "Annuller",
+    "create": "Opret",
+    "delete": "Slet",
+    "goBack": "Gå tilbage",
+    "connected": "Forbundet",
+    "disconnected": "Afbrudt",
+    "add": "Tilføj",
+    "continue": "Fortsæt"
+  },
+  "auth": {
+    "adminLogin": "Administrator login",
+    "loginDescription": "Log ind med din Google-konto for at få adgang til administratorområdet.",
+    "loginWithGoogle": "Log ind med Google",
+    "logout": "Log ud",
+    "accessDenied": "Adgang nægtet. Din konto er ikke autoriseret til at få adgang til administratorområdet.",
+    "authFailed": "Godkendelse mislykkedes. Prøv venligst igen."
+  },
+  "join": {
+    "title": "kweez",
+    "subtitle": "Deltag i quizzen!",
+    "gamePinLabel": "Spil-PIN",
+    "gamePinPlaceholder": "Indtast 6-tegns kode",
+    "yourNameLabel": "Dit navn",
+    "yourNamePlaceholder": "Indtast dit navn",
+    "joinGame": "Deltag i spil",
+    "quizFound": "Quiz: {{title}}",
+    "sessionNotFound": "Session ikke fundet",
+    "invalidSessionCode": "Ugyldig sessionskode",
+    "failedToJoin": "Kunne ikke deltage"
+  },
+  "wait": {
+    "welcome": "Velkommen, {{name}}!",
+    "waitingForHost": "Venter på at værten starter quizzen...",
+    "playersJoined": "spillere deltager"
+  },
+  "started": {
+    "quizStarted": "Kweez er startet!",
+    "waitingForFirstQuestion": "Venter på det første spørgsmål...",
+    "getReady": "Gør dig klar, {{name}}!"
+  },
+  "play": {
+    "questionOf": "Spørgsmål {{current}} af {{total}}",
+    "timeLeft": "{{time}}s",
+    "tapToChange": "Tryk på et andet svar for at ændre",
+    "answerSubmitted": "Svar indsendt!",
+    "waitingForResults": "Venter på resultater..."
+  },
+  "results": {
+    "questionResults": "Resultater for spørgsmål {{number}}",
+    "correct": "Rigtigt!",
+    "wrong": "Forkert!",
+    "plusPoints": "+{{points}} point",
+    "yourPosition": "Din placering",
+    "leaderboard": "Rangliste",
+    "waitingForNextQuestion": "Venter på næste spørgsmål..."
+  },
+  "final": {
+    "quizComplete": "Quiz afsluttet!",
+    "winner": "Vinder",
+    "yourFinalPosition": "Din endelige placering",
+    "finalStandings": "Endelig placering",
+    "playAgain": "Spil igen"
+  },
+  "admin": {
+    "dashboard": "Administrator dashboard",
+    "activeSessions": "Aktive sessioner",
+    "quizzes": "Quizzer",
+    "newQuiz": "Ny quiz",
+    "noQuizzesYet": "Ingen quizzer endnu. Opret din første quiz!",
+    "questionsCount": "{{count}} spørgsmål",
+    "createNewQuiz": "Opret ny quiz",
+    "quizTitle": "Quiz titel",
+    "descriptionOptional": "Beskrivelse (valgfri)",
+    "deleteQuiz": "Slet quiz?",
+    "deleteQuizConfirm": "Dette vil permanent slette quizzen og alle dens spørgsmål. Denne handling kan ikke fortrydes.",
+    "fixedCode": "Fast kode: {{code}}",
+    "startSession": "Start session",
+    "printQrCodes": "Print QR-koder",
+    "edit": "Rediger",
+    "quizLanguage": "Quiz-sprog"
+  },
+  "quizEditor": {
+    "newQuiz": "Ny quiz",
+    "editQuiz": "Rediger quiz",
+    "useFixedQrCode": "Brug fast QR-kode (til udskrivning)",
+    "fixedJoinCode": "Fast tilmeldingskode:",
+    "playersCanJoinAt": "Spillere kan deltage på: {{url}}",
+    "saveQuiz": "Gem quiz",
+    "saving": "Gemmer...",
+    "questions": "Spørgsmål",
+    "addQuestion": "Tilføj spørgsmål",
+    "noText": "(Ingen tekst)",
+    "questionText": "Spørgsmålstekst",
+    "timeLimitSeconds": "Tidsbegrænsning (sekunder)",
+    "questionImage": "Spørgsmålsbillede (valgfrit):",
+    "uploadImage": "Upload billede",
+    "saveQuestionFirst": "Gem spørgsmål først",
+    "remove": "Fjern",
+    "answersHint": "Svar (markér det rigtige):",
+    "answerPlaceholder": "Svar {{number}}",
+    "saveQuestion": "Gem spørgsmål",
+    "noQuestionsYet": "Ingen spørgsmål endnu. Tilføj dit første spørgsmål!",
+    "failedToLoadQuiz": "Kunne ikke indlæse quiz",
+    "failedToSaveQuiz": "Kunne ikke gemme quiz",
+    "failedToSaveQuestion": "Kunne ikke gemme spørgsmål",
+    "failedToDeleteQuestion": "Kunne ikke slette spørgsmål",
+    "failedToUploadImage": "Kunne ikke uploade billede",
+    "failedToDeleteImage": "Kunne ikke slette billede",
+    "questionTextRequired": "Spørgsmålstekst er påkrævet",
+    "atLeastOneAnswer": "Mindst ét svar er påkrævet",
+    "markOneCorrect": "Markér ét svar som korrekt",
+    "saveQuestionBeforeImage": "Gem venligst spørgsmålet først, før du uploader et billede",
+    "sharedSettings": "Delte indstillinger (ens for alle sprog)",
+    "correctAnswer": "Korrekt svar",
+    "answerNumber": "Svar {{number}}",
+    "answerTexts": "Svartekster",
+    "languages": "Sprog",
+    "languagesDescription": "Administrer de tilgængelige sprog for denne quiz. Klik på et sprog for at gøre det til standard. Standardsproget kan ikke slettes.",
+    "addLanguage": "Tilføj sprog",
+    "defaultLanguage": "Standardsprog",
+    "clickToSetDefault": "Klik for at indstille som standard",
+    "languageAlreadyExists": "Dette sprog er allerede tilføjet",
+    "failedToAddLanguage": "Kunne ikke tilføje sprog",
+    "failedToSetDefaultLanguage": "Kunne ikke indstille standardsprog",
+    "failedToDeleteLanguage": "Kunne ikke slette sprog",
+    "cannotDeleteDefaultLanguage": "Kan ikke slette standardsproget",
+    "failedToReorderQuestions": "Kunne ikke ændre rækkefølgen af spørgsmål",
+    "translateFromDefault": "Oversæt fra {{language}}",
+    "translating": "Oversætter...",
+    "translationFailed": "Oversættelse mislykkedes. Prøv venligst igen.",
+    "noSourceTextToTranslate": "Ingen tekst på standardsproget at oversætte",
+    "saveQuestionBeforeTranslate": "Gem spørgsmålet først for at aktivere oversættelse",
+    "translationNotConfigured": "Oversættelsestjeneste ikke konfigureret",
+    "cannotTranslateDefaultLanguage": "Kan ikke oversætte standardsproget",
+    "confirmTranslateTitle": "Overskriv oversættelser?",
+    "confirmTranslateMessage": "Dette vil overskrive eksisterende oversættelser for dette spørgsmål. Er du sikker på, at du vil fortsætte?",
+    "autoTranslateQuestions": "Oversæt automatisk alle spørgsmål fra {{language}}",
+    "autoTranslateDescription": "Bruger DeepL oversættelsestjeneste",
+    "someTranslationsFailed": "{{count}} af {{total}} oversættelser mislykkedes",
+    "autoTranslationFailed": "Automatisk oversættelse mislykkedes. Indhold kopieret fra standardsproget."
+  },
+  "print": {
+    "haveFun": "God fornøjelse!",
+    "noFixedQrCode": "Denne quiz har ikke en fast QR-kode",
+    "failedToLoadQuiz": "Kunne ikke indlæse quiz"
+  },
+  "liveControl": {
+    "openDisplay": "Åbn skærm",
+    "joinCode": "Tilmeldingskode: {{code}}",
+    "currentQuestion": "Spørgsmål {{current}} af {{total}}",
+    "timeLimit": "Tidsbegrænsning: {{seconds}} sekunder",
+    "questionResultsTitle": "Resultater for spørgsmål {{number}}",
+    "answerDistribution": "Svarfordeling vist. Klar til næste spørgsmål.",
+    "controls": "Kontroller",
+    "startQuiz": "Start quiz",
+    "cancelSession": "Annuller session",
+    "firstQuestion": "Første spørgsmål",
+    "nextQuestion": "Næste spørgsmål",
+    "finalResults": "Endelige resultater",
+    "forceCloseQuestion": "Tving afslutning af spørgsmål",
+    "endQuiz": "Afslut quiz",
+    "backToDashboard": "Tilbage til dashboard",
+    "playersLeaderboard": "Spillere",
+    "waitingForPlayers": "Venter på spillere...",
+    "cancelSessionTitle": "Annuller session?",
+    "cancelSessionMessage": "Dette vil annullere sessionen. Alle spillere vil blive afbrudt.",
+    "endQuizTitle": "Afslut quiz?",
+    "endQuizMessage": "Dette vil afslutte quizzen med det samme. Spillere vil se den endelige rangliste.",
+    "sessionNotFound": "Session ikke fundet",
+    "failedToConnect": "Kunne ikke oprette forbindelse til realtidsopdateringer",
+    "failedToStartQuiz": "Kunne ikke starte quiz",
+    "failedToReleaseQuestion": "Kunne ikke frigive spørgsmål",
+    "failedToCloseQuestion": "Kunne ikke afslutte spørgsmål",
+    "failedToEndQuiz": "Kunne ikke afslutte quiz"
+  },
+  "connection": {
+    "reconnecting": "Genopretter forbindelse...",
+    "pleaseWait": "Vent venligst mens vi genopretter din forbindelse",
+    "connectionLost": "Forbindelse mistet",
+    "tryingToReconnect": "Forsøger at genoprette forbindelse..."
+  },
+  "display": {
+    "noActiveGame": "Intet aktivt spil",
+    "waitingForSession": "Venter på at en session starter...",
+    "joinCodeLabel": "Tilmeldingskode: {{code}}",
+    "playersCount": "Spillere ({{count}})",
+    "waitingForPlayersJoin": "Venter på spillere...",
+    "quizStarted": "Quiz startet!",
+    "waitingForFirstQuestion": "Venter på første spørgsmål...",
+    "questionOfTotal": "Spørgsmål {{current}} af {{total}}",
+    "timeSeconds": "{{time}}s",
+    "questionResults": "Resultater for spørgsmål {{number}}",
+    "answersCount": "{{count}} svar",
+    "answerRatio": "{{count}}/{{total}}",
+    "top10": "Top 10",
+    "finalResults": "Endelige resultater",
+    "first": "1.",
+    "second": "2.",
+    "third": "3."
+  },
+  "privacy": {
+    "title": "Privatlivspolitik",
+    "lastUpdated": "Sidst opdateret: {{date}}",
+    "introduction": {
+      "title": "Introduktion",
+      "content": "Kweez er en selvhostet quiz-applikation. Denne privatlivspolitik forklarer, hvordan vi indsamler, bruger og beskytter dine oplysninger, når du bruger vores tjeneste."
+    },
+    "dataCollected": {
+      "title": "Oplysninger vi indsamler",
+      "intro": "Vi indsamler følgende typer oplysninger:",
+      "players": {
+        "title": "Spilleroplysninger:",
+        "content": "Når du deltager i en quiz, indsamler vi kun det kaldenavn, du vælger at vise under spillet. Der kræves ingen kontoregistrering."
+      },
+      "admin": {
+        "title": "Administratoroplysninger:",
+        "content": "Hvis du logger ind som administrator ved hjælp af Google, modtager vi din e-mailadresse og dit navn fra Google for at bekræfte din identitet."
+      },
+      "gameData": {
+        "title": "Spildata:",
+        "content": "Vi gemmer dine svar og scorer under quiz-sessioner for at vise ranglister og resultater."
+      }
+    },
+    "howWeUse": {
+      "title": "Sådan bruger vi dine oplysninger",
+      "intro": "Vi bruger kun de indsamlede oplysninger til at:",
+      "items": {
+        "runQuiz": "Køre quizzen og vise dit navn til andre deltagere",
+        "displayLeaderboard": "Beregne og vise scorer og ranglister",
+        "adminAccess": "Godkende administratorer til at administrere quizzer"
+      }
+    },
+    "cookies": {
+      "title": "Cookies",
+      "content": "Vi bruger et minimalt antal cookies, der er nødvendige for, at applikationen fungerer:",
+      "auth": {
+        "title": "Godkendelses-cookie:",
+        "content": "Bruges til at holde administratorer logget ind (udløber efter 7 dage)."
+      },
+      "language": {
+        "title": "Sprogpræference:",
+        "content": "Gemt i din browser for at huske dit foretrukne sprog."
+      }
+    },
+    "thirdParty": {
+      "title": "Tredjepartstjenester",
+      "content": "Vi bruger følgende tredjepartstjenester:",
+      "google": {
+        "title": "Google OAuth:",
+        "content": "Bruges til administratorgodkendelse. Når du logger ind med Google, håndteres din godkendelse af Googles servere.",
+        "link": "Googles privatlivspolitik"
+      }
+    },
+    "dataRetention": {
+      "title": "Dataopbevaring",
+      "content": "Spillerkaldenavne og spildata opbevares kun under quiz-sessioner. Quiz-indhold oprettet af administratorer gemmes, indtil det eksplicit slettes. Administratorgodkendelsesdata opbevares, mens du forbliver logget ind."
+    },
+    "dataSecurity": {
+      "title": "Datasikkerhed",
+      "content": "Vi implementerer passende sikkerhedsforanstaltninger for at beskytte dine oplysninger, herunder krypterede forbindelser (HTTPS) og sikre godkendelsespraksisser."
+    },
+    "yourRights": {
+      "title": "Dine rettigheder",
+      "content": "Da Kweez er selvhostet, er dataansvarlig den person eller organisation, der hoster denne instans. Du kan kontakte dem for at anmode om adgang til, rettelse af eller sletning af dine personoplysninger."
+    },
+    "contact": {
+      "title": "Kontakt",
+      "content": "Hvis du har spørgsmål om denne privatlivspolitik eller dine data, bedes du kontakte:"
+    },
+    "changes": {
+      "title": "Ændringer i denne politik",
+      "content": "Vi kan opdatere denne privatlivspolitik fra tid til anden. Eventuelle ændringer vil blive afspejlet på denne side med en opdateret revisionsdato."
+    }
+  },
+  "footer": {
+    "privacyPolicy": "Privatlivspolitik"
+  }
+}

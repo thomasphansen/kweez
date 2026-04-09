@@ -9,6 +9,8 @@ interface LayoutProps {
 }
 
 const languages = [
+  { code: 'da', label: 'Dansk' },
+  { code: 'de', label: 'Deutsch' },
   { code: 'en', label: 'English' },
   { code: 'pt', label: 'Português' },
 ]

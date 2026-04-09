@@ -31,6 +31,7 @@ services:
       - Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
       - Auth__AdminEmail=${AUTH_ADMIN_EMAIL:-thomasphansen@gmail.com}
       - FrontendUrl=${FRONTEND_URL:-http://localhost:3000}
+      - DeepL__ApiKey=${DEEPL_API_KEY:-}
     volumes:
       - uploads_data:/app/uploads
     ports:

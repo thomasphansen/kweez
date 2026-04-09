@@ -43,6 +43,12 @@ import {
   MenuItem,
   Tabs,
   Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Checkbox,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
@@ -54,7 +60,8 @@ import ImageIcon from '@mui/icons-material/Image'
 import StarIcon from '@mui/icons-material/Star'
 import LanguageIcon from '@mui/icons-material/Language'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
-import { quizApi } from '../../services/api'
+import TranslateIcon from '@mui/icons-material/Translate'
+import { quizApi, translationApi } from '../../services/api'
 import type { QuizLanguage, QuizWithTranslations, QuestionWithTranslations, QuestionTranslationContent } from '../../types'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -190,6 +197,17 @@ export default function QuizEditor() {
   const [newLanguageCode, setNewLanguageCode] = useState('')
   const [selectedLanguageTabs, setSelectedLanguageTabs] = useState<Record<number, string>>({})
 
+  // Translation feature state
+  const [translationAvailable, setTranslationAvailable] = useState(false)
+  const [translatingQuestion, setTranslatingQuestion] = useState<number | null>(null)
+  const [autoTranslateOnAdd, setAutoTranslateOnAdd] = useState(false)
+  const [addingLanguageWithTranslation, setAddingLanguageWithTranslation] = useState(false)
+  const [confirmTranslateDialog, setConfirmTranslateDialog] = useState<{
+    open: boolean
+    questionIndex: number
+    targetLang: string
+  } | null>(null)
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -202,6 +220,19 @@ export default function QuizEditor() {
       loadQuiz(id)
     }
   }, [id])
+
+  // Check if translation service is available
+  useEffect(() => {
+    const checkTranslationStatus = async () => {
+      try {
+        const status = await translationApi.getStatus()
+        setTranslationAvailable(status.configured)
+      } catch {
+        setTranslationAvailable(false)
+      }
+    }
+    checkTranslationStatus()
+  }, [])
 
   const loadQuiz = async (quizId: string) => {
     try {
@@ -392,6 +423,78 @@ export default function QuizEditor() {
     }
   }
 
+  const handleTranslateQuestion = async (questionIndex: number, targetLang: string, skipConfirmation = false) => {
+    const question = questions[questionIndex]
+    const defaultLang = getDefaultLanguage()
+    const defaultTranslation = question.translations[defaultLang]
+    const targetTranslation = question.translations[targetLang]
+
+    // Check if target has existing content and show confirmation
+    if (!skipConfirmation) {
+      const hasExistingContent = targetTranslation && (
+        targetTranslation.questionText.trim() ||
+        targetTranslation.answerTexts.some(a => a.trim())
+      )
+      
+      if (hasExistingContent) {
+        setConfirmTranslateDialog({
+          open: true,
+          questionIndex,
+          targetLang,
+        })
+        return
+      }
+    }
+
+    // Close confirmation dialog if open
+    setConfirmTranslateDialog(null)
+
+    if (!defaultTranslation?.questionText.trim()) {
+      setError(t('quizEditor.noSourceTextToTranslate'))
+      return
+    }
+
+    setTranslatingQuestion(questionIndex)
+    setError('')
+
+    try {
+      // Combine question text and answers into one array
+      const textsToTranslate = [
+        defaultTranslation.questionText,
+        ...defaultTranslation.answerTexts
+      ]
+
+      const response = await translationApi.translate(textsToTranslate, defaultLang, targetLang)
+      
+      // Update the question with translated content
+      const updated = [...questions]
+      const translations = { ...updated[questionIndex].translations }
+      translations[targetLang] = {
+        questionText: response.translations[0],
+        answerTexts: response.translations.slice(1),
+      }
+      updated[questionIndex] = { ...updated[questionIndex], translations }
+      setQuestions(updated)
+    } catch (err) {
+      setError(t('quizEditor.translationFailed'))
+    } finally {
+      setTranslatingQuestion(null)
+    }
+  }
+
+  const getTranslateButtonTooltip = (question: QuestionForm, lang: QuizLanguage): string => {
+    if (!question.id) {
+      return t('quizEditor.saveQuestionBeforeTranslate')
+    }
+    if (!translationAvailable) {
+      return t('quizEditor.translationNotConfigured')
+    }
+    if (lang.isDefault) {
+      return t('quizEditor.cannotTranslateDefaultLanguage')
+    }
+    return ''
+  }
+
   const handleImageUpload = async (index: number, file: File) => {
     const question = questions[index]
     if (!question.id) {
@@ -449,27 +552,124 @@ export default function QuizEditor() {
       const newLang = await quizApi.addLanguage(id, newLanguageCode)
       const updatedLanguages = [...languages, newLang]
       setLanguages(updatedLanguages)
-      setNewLanguageCode('')
       
-      // Copy translations from default language to the new language for all questions
       const defaultLang = getDefaultLanguage()
-      setQuestions(questions.map(q => {
-        const defaultTranslation = q.translations[defaultLang]
-        return {
-          ...q,
-          translations: {
-            ...q.translations,
-            [newLanguageCode]: {
-              questionText: defaultTranslation?.questionText || '',
-              answerTexts: [...(defaultTranslation?.answerTexts || ['', '', '', ''])],
-            },
-          },
+      const shouldAutoTranslate = autoTranslateOnAdd && translationAvailable && questions.some(q => q.id)
+
+      if (shouldAutoTranslate) {
+        setAddingLanguageWithTranslation(true)
+        
+        // Get saved questions that have content in default language
+        const questionsToTranslate = questions.filter(q => 
+          q.id && q.translations[defaultLang]?.questionText.trim()
+        )
+
+        if (questionsToTranslate.length > 0) {
+          try {
+            const bulkRequest = questionsToTranslate.map(q => ({
+              questionId: q.id!,
+              questionText: q.translations[defaultLang].questionText,
+              answerTexts: q.translations[defaultLang].answerTexts,
+            }))
+
+            const response = await translationApi.translateBulk(bulkRequest, defaultLang, newLanguageCode)
+            
+            // Update questions with translations
+            setQuestions(questions.map(q => {
+              if (!q.id) {
+                // New unsaved question - copy from default
+                const defaultTranslation = q.translations[defaultLang]
+                return {
+                  ...q,
+                  translations: {
+                    ...q.translations,
+                    [newLanguageCode]: {
+                      questionText: defaultTranslation?.questionText || '',
+                      answerTexts: [...(defaultTranslation?.answerTexts || ['', '', '', ''])],
+                    },
+                  },
+                }
+              }
+
+              const translatedResult = response.results.find(r => r.questionId === q.id)
+              if (translatedResult && translatedResult.success) {
+                return {
+                  ...q,
+                  translations: {
+                    ...q.translations,
+                    [newLanguageCode]: {
+                      questionText: translatedResult.questionText,
+                      answerTexts: translatedResult.answerTexts,
+                    },
+                  },
+                }
+              } else {
+                // Translation failed for this question - copy from default
+                const defaultTranslation = q.translations[defaultLang]
+                return {
+                  ...q,
+                  translations: {
+                    ...q.translations,
+                    [newLanguageCode]: {
+                      questionText: defaultTranslation?.questionText || '',
+                      answerTexts: [...(defaultTranslation?.answerTexts || ['', '', '', ''])],
+                    },
+                  },
+                }
+              }
+            }))
+
+            // Report any errors
+            if (response.errors.length > 0) {
+              setError(t('quizEditor.someTranslationsFailed', { 
+                count: response.errors.length,
+                total: response.totalCount 
+              }))
+            }
+          } catch (translationErr) {
+            // Translation failed, but language was added - copy from default
+            setQuestions(questions.map(q => {
+              const defaultTranslation = q.translations[defaultLang]
+              return {
+                ...q,
+                translations: {
+                  ...q.translations,
+                  [newLanguageCode]: {
+                    questionText: defaultTranslation?.questionText || '',
+                    answerTexts: [...(defaultTranslation?.answerTexts || ['', '', '', ''])],
+                  },
+                },
+              }
+            }))
+            setError(t('quizEditor.autoTranslationFailed'))
+          }
         }
-      }))
+        
+        setAddingLanguageWithTranslation(false)
+      } else {
+        // No auto-translate - just copy from default language
+        setQuestions(questions.map(q => {
+          const defaultTranslation = q.translations[defaultLang]
+          return {
+            ...q,
+            translations: {
+              ...q.translations,
+              [newLanguageCode]: {
+                questionText: defaultTranslation?.questionText || '',
+                answerTexts: [...(defaultTranslation?.answerTexts || ['', '', '', ''])],
+              },
+            },
+          }
+        }))
+      }
+      
+      setNewLanguageCode('')
+      setAutoTranslateOnAdd(false)
     } catch (err) {
       setError(t('quizEditor.failedToAddLanguage'))
     } finally {
       setSaving(false)
+      setAddingLanguageWithTranslation(false)
     }
   }
 
@@ -718,7 +918,7 @@ export default function QuizEditor() {
           </Box>
 
           {/* Add New Language */}
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel id="add-language-label">{t('quizEditor.addLanguage')}</InputLabel>
               <Select
@@ -738,13 +938,40 @@ export default function QuizEditor() {
             </FormControl>
             <Button
               variant="outlined"
-              startIcon={<AddIcon />}
+              startIcon={addingLanguageWithTranslation ? <CircularProgress size={16} /> : <AddIcon />}
               onClick={handleAddLanguage}
-              disabled={!newLanguageCode || saving}
+              disabled={!newLanguageCode || saving || addingLanguageWithTranslation}
             >
-              {t('common.add')}
+              {addingLanguageWithTranslation ? t('quizEditor.translating') : t('common.add')}
             </Button>
           </Box>
+          
+          {/* Auto-translate option */}
+          {newLanguageCode && translationAvailable && questions.some(q => q.id) && (
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={autoTranslateOnAdd}
+                    onChange={(e) => setAutoTranslateOnAdd(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body2">
+                      {t('quizEditor.autoTranslateQuestions', { 
+                        language: SUPPORTED_QUIZ_LANGUAGES.find(l => l.code === getDefaultLanguage())?.name || getDefaultLanguage()
+                      })}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('quizEditor.autoTranslateDescription')}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
+          )}
         </Paper>
       )}
 
@@ -909,12 +1136,40 @@ export default function QuizEditor() {
                               questionText: '',
                               answerTexts: ['', '', '', ''],
                             }
+                            const isTranslating = translatingQuestion === qIndex
+                            const translateTooltip = getTranslateButtonTooltip(question, lang)
+                            const canTranslate = question.id && translationAvailable && !lang.isDefault
+                            const defaultLangName = SUPPORTED_QUIZ_LANGUAGES.find(
+                              l => l.code === getDefaultLanguage()
+                            )?.name || getDefaultLanguage()
                             
                             return (
                               <Box
                                 key={lang.languageCode}
                                 sx={{ display: isActive ? 'block' : 'none' }}
                               >
+                                {/* Translate button for non-default languages */}
+                                {!lang.isDefault && (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Tooltip title={translateTooltip || ''}>
+                                      <span>
+                                        <Button
+                                          variant="outlined"
+                                          size="small"
+                                          startIcon={isTranslating ? <CircularProgress size={16} /> : <TranslateIcon />}
+                                          onClick={() => handleTranslateQuestion(qIndex, lang.languageCode)}
+                                          disabled={!canTranslate || isTranslating}
+                                        >
+                                          {isTranslating 
+                                            ? t('quizEditor.translating')
+                                            : t('quizEditor.translateFromDefault', { language: defaultLangName })
+                                          }
+                                        </Button>
+                                      </span>
+                                    </Tooltip>
+                                  </Box>
+                                )}
+
                                 <TextField
                                   fullWidth
                                   label={t('quizEditor.questionText')}
@@ -988,6 +1243,39 @@ export default function QuizEditor() {
           )}
         </>
       )}
+
+      {/* Confirmation Dialog for Translation Overwrite */}
+      <Dialog
+        open={confirmTranslateDialog?.open ?? false}
+        onClose={() => setConfirmTranslateDialog(null)}
+      >
+        <DialogTitle>{t('quizEditor.confirmTranslateTitle')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('quizEditor.confirmTranslateMessage')}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmTranslateDialog(null)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={() => {
+              if (confirmTranslateDialog) {
+                handleTranslateQuestion(
+                  confirmTranslateDialog.questionIndex,
+                  confirmTranslateDialog.targetLang,
+                  true // skip confirmation
+                )
+              }
+            }}
+            variant="contained"
+            color="primary"
+          >
+            {t('common.continue')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }

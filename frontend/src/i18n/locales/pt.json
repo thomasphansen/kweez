@@ -13,7 +13,8 @@
     "goBack": "Voltar",
     "connected": "Conectado",
     "disconnected": "Desconectado",
-    "add": "Adicionar"
+    "add": "Adicionar",
+    "continue": "Continuar"
   },
   "auth": {
     "adminLogin": "Login do Administrador",
@@ -132,7 +133,20 @@
     "failedToSetDefaultLanguage": "Falha ao definir idioma padrão",
     "failedToDeleteLanguage": "Falha ao excluir idioma",
     "cannotDeleteDefaultLanguage": "Não é possível excluir o idioma padrão",
-    "failedToReorderQuestions": "Falha ao reordenar perguntas"
+    "failedToReorderQuestions": "Falha ao reordenar perguntas",
+    "translateFromDefault": "Traduzir de {{language}}",
+    "translating": "Traduzindo...",
+    "translationFailed": "Falha na tradução. Por favor, tente novamente.",
+    "noSourceTextToTranslate": "Não há texto no idioma padrão para traduzir",
+    "saveQuestionBeforeTranslate": "Salve a pergunta primeiro para habilitar a tradução",
+    "translationNotConfigured": "Serviço de tradução não configurado",
+    "cannotTranslateDefaultLanguage": "Não é possível traduzir o idioma padrão",
+    "confirmTranslateTitle": "Sobrescrever traduções?",
+    "confirmTranslateMessage": "Isso sobrescreverá as traduções existentes para esta pergunta. Tem certeza que deseja continuar?",
+    "autoTranslateQuestions": "Traduzir automaticamente todas as perguntas de {{language}}",
+    "autoTranslateDescription": "Usa o serviço de tradução DeepL",
+    "someTranslationsFailed": "{{count}} de {{total}} traduções falharam",
+    "autoTranslationFailed": "Tradução automática falhou. Conteúdo copiado do idioma padrão."
   },
   "print": {
     "haveFun": "Divirta-se!",
