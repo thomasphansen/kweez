@@ -841,10 +841,10 @@ export default function QuizEditor() {
               sx={{ 
                 mt: 1, 
                 p: 2, 
-                bgcolor: 'primary.50', 
+                bgcolor: 'grey.100',
                 borderRadius: 1,
                 border: '1px solid',
-                borderColor: 'primary.200'
+                borderColor: 'primary.main',
               }}
             >
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -1009,7 +1009,7 @@ export default function QuizEditor() {
                       <Divider sx={{ mb: 2 }} />
                       
                       {/* Shared fields - above tabs */}
-                      <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.800', borderRadius: 1, color: 'grey.100' }}>
+                      <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1, border: '1px solid', borderColor: 'grey.300' }}>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
                           {t('quizEditor.sharedSettings')}
                         </Typography>

@@ -1,32 +1,64 @@
 import { createTheme } from '@mui/material/styles'
 
-// Material Design 3 inspired theme
+// Fresh & Vibrant Light Theme
 export const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
-      main: '#D0BCFF', // Purple
-      contrastText: '#381E72',
+      main: '#00897B', // Teal 600
+      light: '#4DB6AC', // Teal 300
+      dark: '#00695C', // Teal 800
+      contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#CCC2DC',
-      contrastText: '#332D41',
+      main: '#FF7043', // Deep Orange 400 (coral accent)
+      light: '#FF8A65', // Deep Orange 300
+      dark: '#F4511E', // Deep Orange 600
+      contrastText: '#FFFFFF',
     },
     error: {
-      main: '#F2B8B5',
-      contrastText: '#601410',
+      main: '#EF5350', // Red 400
+      light: '#E57373', // Red 300
+      dark: '#E53935', // Red 600
+      contrastText: '#FFFFFF',
+    },
+    warning: {
+      main: '#FFA726', // Orange 400
+      light: '#FFB74D', // Orange 300
+      dark: '#FB8C00', // Orange 600
+      contrastText: '#000000',
     },
     success: {
-      main: '#A8DAB5',
-      contrastText: '#0D3818',
+      main: '#66BB6A', // Green 400
+      light: '#81C784', // Green 300
+      dark: '#43A047', // Green 600
+      contrastText: '#FFFFFF',
+    },
+    info: {
+      main: '#29B6F6', // Light Blue 400
+      light: '#4FC3F7', // Light Blue 300
+      dark: '#039BE5', // Light Blue 600
+      contrastText: '#FFFFFF',
     },
     background: {
-      default: '#1C1B1F',
-      paper: '#2B2930',
+      default: '#F5F5F5', // Grey 100
+      paper: '#FFFFFF',
     },
     text: {
-      primary: '#E6E1E5',
-      secondary: '#CAC4D0',
+      primary: '#212121', // Grey 900
+      secondary: '#757575', // Grey 600
+    },
+    grey: {
+      50: '#FAFAFA',
+      100: '#F5F5F5',
+      200: '#EEEEEE',
+      300: '#E0E0E0',
+      400: '#BDBDBD',
+      500: '#9E9E9E',
+      600: '#757575',
+      700: '#616161',
+      800: '#424242',
+      900: '#212121',
     },
   },
   typography: {
@@ -73,6 +105,17 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 24,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        },
+        elevation1: {
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
         },
       },
     },
@@ -85,10 +128,25 @@ export const theme = createTheme({
         },
       },
     },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 500,
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 500,
+        },
+      },
+    },
   },
 })
 
-// Answer button colors (Kahoot-style)
+// Answer button colors (Kahoot-style) - kept unchanged
 export const answerColors = [
   '#E21B3C', // Red
   '#1368CE', // Blue
