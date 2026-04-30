@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**kweez** is a self-hosted, real-time quiz web application inspired by Kahoot!, designed for live events such as parties.
+**kweez** is a self-hosted, real-time quiz web application inspired by Kahoot!, designed for live events such as parties, team buildings, and classrooms.
 
 Participants join using a QR code, enter their name, and answer timed questions in sync. The administrator controls quiz flow in real time.
 
@@ -19,22 +19,29 @@ The system is optimized for:
 
 #### Backend (ASP.NET Core .NET 10)
 - **Database**: PostgreSQL with Entity Framework Core
-- **Models**: Quiz, Question, AnswerOption, QuizSession, Participant, ParticipantAnswer
-- **Services**: QuizService, SessionService, ScoringService
-- **Controllers**: QuizzesController, SessionsController
+- **Models**: Quiz, Question, AnswerOption, QuizSession, Participant, ParticipantAnswer, QuizLanguage, QuestionTranslation, AnswerOptionTranslation
+- **Services**: QuizService, SessionService, ScoringService, TranslationService, QuizNotificationService
+- **Controllers**: QuizzesController, SessionsController, AuthController, TranslationController
 - **SignalR Hub**: QuizHub with real-time events
-- **Fixed Join Codes**: Quizzes can have permanent QR codes that work across sessions
+- **Authentication**: Google OAuth with cookie-based sessions
+- **Translation**: DeepL API integration for auto-translation
 
 #### Frontend (React + TypeScript + MUI)
-- **Layout**: Header ("Kweez") and footer ("Kweez - © 2026 - Thomas Hansen") on all pages except print
+- **Theme**: Fresh & Vibrant light theme with teal primary color
+- **Layout**: Header with language selector and footer with privacy policy link
 - **Player Pages**: JoinPage, WaitPage, StartedPage, PlayPage, ResultsPage, FinalPage
-- **Admin Pages**: AdminDashboard, QuizEditor, LiveControl, PrintQRCode
+- **Admin Pages**: LoginPage, AdminDashboard, QuizEditor, LiveControl, PrintQRCode
+- **Display Page**: DisplayPage for projector/TV display during quiz
+- **Other Pages**: PrivacyPolicy
 - **Real-time**: SignalR integration via SessionContext
+- **Authentication**: AuthContext with Google OAuth
+- **Internationalization**: 4 languages (Danish, German, English, Portuguese) with auto-detection
 - **Mobile-first**: Responsive design with large touch targets
 
 #### Infrastructure
 - **Docker Compose**: frontend, backend, postgres services
 - **Solution file**: `Kweez.slnx` (new XML format)
+- **Environment**: `.env` file for configuration
 
 ---
 
@@ -49,7 +56,8 @@ The system is optimized for:
   - Sees score and rankings
 
 - **Administrator**
-  - Creates and manages quizzes
+  - Authenticates via Google OAuth
+  - Creates and manages quizzes (with multi-language support)
   - Starts/stops quiz sessions
   - Releases questions
   - Controls progression
@@ -61,20 +69,25 @@ The system is optimized for:
 ### High-Level Stack
 
 - **Frontend**
-  - React + TypeScript
-  - MUI (Material UI) with Material Design 3-inspired theming
+  - React 18 + TypeScript
+  - MUI (Material UI) v5 with custom light theme
   - Vite for build tooling
+  - i18next for internationalization
+  - SignalR client for real-time
 
 - **Backend**
   - ASP.NET Core (.NET 10)
   - SignalR for real-time communication
-  - Entity Framework Core
+  - Entity Framework Core with PostgreSQL
+  - Google OAuth authentication
+  - DeepL API for translations
 
 - **Database**
-  - PostgreSQL
+  - PostgreSQL 16
 
 - **Infrastructure**
   - Docker + Docker Compose
+  - Reverse proxy support (Caddy, Nginx, etc.)
 
 ---
 
@@ -84,8 +97,10 @@ The system is optimized for:
 kweez/
 ├── backend/
 │   ├── Controllers/
+│   │   ├── AuthController.cs
 │   │   ├── QuizzesController.cs
-│   │   └── SessionsController.cs
+│   │   ├── SessionsController.cs
+│   │   └── TranslationController.cs
 │   ├── Data/
 │   │   └── KweezDbContext.cs
 │   ├── DTOs/
@@ -98,11 +113,16 @@ kweez/
 │   │   ├── AnswerOption.cs
 │   │   ├── QuizSession.cs
 │   │   ├── Participant.cs
-│   │   └── ParticipantAnswer.cs
+│   │   ├── ParticipantAnswer.cs
+│   │   ├── QuizLanguage.cs
+│   │   ├── QuestionTranslation.cs
+│   │   └── AnswerOptionTranslation.cs
 │   ├── Services/
 │   │   ├── QuizService.cs
 │   │   ├── SessionService.cs
-│   │   └── ScoringService.cs
+│   │   ├── ScoringService.cs
+│   │   ├── TranslationService.cs
+│   │   └── QuizNotificationService.cs
 │   └── Migrations/
 ├── backend.Tests/
 │   └── Services/
@@ -112,11 +132,21 @@ kweez/
 ├── frontend/
 │   └── src/
 │       ├── components/
-│       │   ├── Layout.tsx
-│       │   └── ConnectionStatus.tsx
+│       │   ├── AdminRoute.tsx
+│       │   ├── ConnectionStatus.tsx
+│       │   └── Layout.tsx
 │       ├── context/
+│       │   ├── AuthContext.tsx
 │       │   └── SessionContext.tsx
+│       ├── i18n/
+│       │   ├── index.ts
+│       │   └── locales/
+│       │       ├── da.json
+│       │       ├── de.json
+│       │       ├── en.json
+│       │       └── pt.json
 │       ├── pages/
+│       │   ├── PrivacyPolicy.tsx
 │       │   ├── player/
 │       │   │   ├── JoinPage.tsx
 │       │   │   ├── WaitPage.tsx
@@ -124,17 +154,24 @@ kweez/
 │       │   │   ├── PlayPage.tsx
 │       │   │   ├── ResultsPage.tsx
 │       │   │   └── FinalPage.tsx
-│       │   └── admin/
-│       │       ├── AdminDashboard.tsx
-│       │       ├── QuizEditor.tsx
-│       │       ├── LiveControl.tsx
-│       │       └── PrintQRCode.tsx
+│       │   ├── admin/
+│       │   │   ├── LoginPage.tsx
+│       │   │   ├── AdminDashboard.tsx
+│       │   │   ├── QuizEditor.tsx
+│       │   │   ├── LiveControl.tsx
+│       │   │   └── PrintQRCode.tsx
+│       │   └── display/
+│       │       └── DisplayPage.tsx
 │       ├── services/
 │       │   ├── api.ts
 │       │   └── signalr.ts
-│       └── types/
-│           └── index.ts
+│       ├── types/
+│       │   └── index.ts
+│       └── theme.ts
+├── .env.example
 ├── docker-compose.yml
+├── LICENSE.md
+├── README.md
 └── Kweez.slnx
 ```
 
@@ -144,7 +181,7 @@ kweez/
 
 1. Player scans QR code → opens `/join?session=XXXXXX`
 2. Player enters name → joins session → `/wait`
-3. Player waits in lobby (sees other players)
+3. Player waits in lobby (sees other players joining)
 4. Admin clicks "Start Quiz" → Players see `/started` ("Kweez has started!")
 5. For each question:
    - Admin releases question
@@ -174,6 +211,45 @@ Rules:
 - All scoring happens on the server
 - Score is calculated when question closes (not on submission)
 - Client timestamps are never trusted
+
+---
+
+## Authentication
+
+### Google OAuth
+- Cookie-based authentication (not JWT)
+- Only authorized admin email can access admin area
+- Configured via environment variables:
+  - `GOOGLE_CLIENT_ID`
+  - `GOOGLE_CLIENT_SECRET`
+  - `AUTH_ADMIN_EMAIL`
+
+### Protected Routes
+- All `/admin/*` routes require authentication
+- SignalR hub methods for admin actions check authorization
+- Players do not require authentication
+
+---
+
+## Multi-Language Support
+
+### UI Languages
+- Danish (`da`)
+- German (`de`)
+- English (`en`)
+- Portuguese (`pt`)
+
+### Language Detection (Priority Order)
+1. URL query parameter (`?lng=da`)
+2. localStorage (user's previous selection)
+3. Browser/device language
+4. Fallback to English
+
+### Quiz Content Languages
+- Each quiz can have multiple content languages
+- One language is marked as default
+- Questions and answers can be translated per language
+- Auto-translation via DeepL API (optional)
 
 ---
 
@@ -212,8 +288,11 @@ Rules:
 ### Tables
 
 - **Quizzes**: id, title, description, fixedJoinCode?, createdAtUtc
-- **Questions**: id, quizId, text, timeLimitSeconds, orderIndex
-- **AnswerOptions**: id, questionId, text, isCorrect, orderIndex
+- **QuizLanguages**: id, quizId, languageCode, isDefault
+- **Questions**: id, quizId, imageUrl?, timeLimitSeconds, orderIndex
+- **QuestionTranslations**: id, questionId, languageCode, text
+- **AnswerOptions**: id, questionId, isCorrect, orderIndex
+- **AnswerOptionTranslations**: id, answerOptionId, languageCode, text
 - **QuizSessions**: id, quizId, joinCode, status, startedAtUtc?, endedAtUtc?
 - **Participants**: id, sessionId, name, totalScore, joinedAtUtc, isConnected
 - **ParticipantAnswers**: id, participantId, questionId, answerOptionId, submittedAtUtc, responseTimeMs, score
@@ -242,6 +321,12 @@ Rules:
 - Changing answer updates both `answerOptionId` AND `responseTimeMs`
 - Clicking same answer again is ignored (keeps original time)
 
+### Auto-Translation
+- DeepL API integration (optional, requires API key)
+- Translate individual questions from default language
+- Bulk translate all questions when adding a new language
+- Confirmation dialog before overwriting existing translations
+
 ### Results Display
 - Correct answer: green border with glow effect
 - Wrong answers: darkened (40% mix with black)
@@ -249,6 +334,8 @@ Rules:
 
 ### Layout
 - All pages (except PrintQRCode) have header and footer
+- Header: "Kweez!" title, language selector, logout button (admin only)
+- Footer: Copyright and Privacy Policy link
 - Content area is scrollable, fits within viewport
 - Mobile-responsive with larger buttons on small screens
 
@@ -256,9 +343,18 @@ Rules:
 
 ## UI/UX Details
 
-### Answer Colors
+### Theme (Fresh & Vibrant Light)
 ```typescript
-const answerColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c']
+// Primary colors
+primary: '#00897B'     // Teal 600
+secondary: '#FF7043'   // Coral (Deep Orange 400)
+background: '#F5F5F5'  // Light Gray
+paper: '#FFFFFF'       // White
+```
+
+### Answer Colors (Kahoot-style)
+```typescript
+const answerColors = ['#E21B3C', '#1368CE', '#D89E00', '#26890C']
 // Red, Blue, Yellow, Green
 ```
 
@@ -270,31 +366,39 @@ const answerColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c']
 5. `/results` - See correct answer and leaderboard
 6. `/final` - Final standings
 
-### Admin Live Control
-- Shows QR code while waiting
-- "Start Quiz" button (disabled until players join)
-- "First Question" → "Next Question" → "Final Results" button progression
-- "Force Close Question" to end early
-- "End Quiz" with confirmation dialog
+### Admin Flow
+1. `/admin/login` - Google OAuth sign-in
+2. `/admin` - Dashboard with quiz list
+3. `/admin/quiz/:id` - Quiz editor with multi-language support
+4. `/admin/session/:id` - Live control panel
+5. `/admin/print/:id` - Print QR codes
+
+### Display Page
+- `/display` - Full-screen display for projector/TV
+- Shows QR code during waiting
+- Shows questions and countdown during play
+- Shows leaderboard and results
+- Auto-refreshes when new session starts
 
 ---
 
 ## Testing
 
-### Backend Tests (76 tests)
+### Backend Tests (96 tests)
 - QuizServiceTests: CRUD operations
 - SessionServiceTests: Session lifecycle, state management
 - ScoringServiceTests: Score calculation, answer changing
 
-### Frontend Tests (75 tests)
+### Frontend Tests (92 tests)
 - SignalR service tests
 - SessionContext tests
 - Component tests (PlayPage, WaitPage, ConnectionStatus)
+- Localization tests
 
 ### Running Tests
 ```bash
 # Backend
-cd backend && dotnet test
+cd backend.Tests && dotnet test
 
 # Frontend
 cd frontend && npm test
@@ -325,7 +429,10 @@ cd frontend && npm run dev
 npm run build
 
 # Type check
-npm run typecheck
+npx tsc --noEmit
+
+# Run tests
+npm test
 ```
 
 ### Docker
@@ -342,6 +449,23 @@ docker compose up -d --build
 
 ---
 
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `POSTGRES_USER` | Database username | Yes |
+| `POSTGRES_PASSWORD` | Database password | Yes |
+| `POSTGRES_DB` | Database name | Yes |
+| `ALLOWED_ORIGINS` | CORS allowed origins | Yes |
+| `VITE_API_URL` | API URL for frontend | Yes |
+| `FRONTEND_URL` | Frontend URL for OAuth | Yes |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Yes |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | Yes |
+| `AUTH_ADMIN_EMAIL` | Email allowed to access admin | Yes |
+| `DEEPL_API_KEY` | DeepL API key for translation | No |
+
+---
+
 ## Known Quirks
 
 1. **EF Core InMemory provider**: When replacing child collections, must delete and save first, then add new items in separate save.
@@ -349,6 +473,10 @@ docker compose up -d --build
 2. **Fixed QR code replay**: Join codes have unique constraint, so when reusing fixed codes, old sessions get code changed to "X" + random suffix.
 
 3. **Print page**: Uses internal padding (10mm) instead of @page margins for better cross-browser print support.
+
+4. **Reverse proxy**: When behind a reverse proxy, `UseForwardedHeaders()` must be called to read `X-Forwarded-Proto` headers for OAuth to work correctly.
+
+5. **DeepL authentication**: Uses header-based authentication (`Authorization: DeepL-Auth-Key`) as legacy form body auth was deprecated in November 2025.
 
 ---
 
@@ -359,12 +487,15 @@ docker compose up -d --build
 - Use DI (built-in ASP.NET Core)
 - Keep controllers thin, move logic to services
 - Solution file: `Kweez.slnx` (new XML format)
+- Protect admin endpoints with `[Authorize(Policy = "Admin")]`
 
 ### Frontend
 - Functional components with hooks
-- SessionContext for all game state
+- SessionContext for game state
+- AuthContext for authentication state
 - MUI components with sx prop for styling
 - Responsive breakpoints: xs (mobile), sm (tablet+)
+- i18next for all user-facing strings
 
 ---
 
@@ -376,6 +507,8 @@ The most critical aspects are:
 - Reliable real-time communication (SignalR)
 - Server-controlled timing and scoring
 - Simple, responsive mobile UI
+- Multi-language support for international audiences
 - Answer changing allowed until question closes
+- Google OAuth for admin security
 
 Everything else is secondary.
